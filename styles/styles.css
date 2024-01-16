@@ -16,34 +16,40 @@
     border-radius: 5px;
 }
 
-
 .subhead {
-display:ruby ;
-background-color: #086340;
-color: white;
-padding: 10px 20px;
-border-radius: 5px;
-text-decoration: none;
-text-align: center;
-
-
-    
+    display: block;
+    background-color: #086340;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    text-align: center;
 }
+
 .head {
-    display:ruby ;
+    display: block;
     background-color: black;
     color: white;
     padding: 10px 20px;
     border-radius: 5px;
     text-decoration: none;
     text-align: center;
-    
-    
-        
-    }
-.sender-column {
-text-align: right;
-
-
-
 }
+  
+  .sender-column {
+    text-align: right;
+  }
+  
+  .h1 {
+    font-size: 1.5em;
+  }
+  
+  .h2 {
+    font-size: 1.3em;
+  }
+  
+  .indented-line {
+    margin-left: 20px; 
+
+  }
+  
