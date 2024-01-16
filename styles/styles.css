@@ -1,0 +1,49 @@
+.button-link-avail {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #4CAF50; 
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.button-link-na {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #a00916; 
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+
+.subhead {
+display:ruby ;
+background-color: #086340;
+color: white;
+padding: 10px 20px;
+border-radius: 5px;
+text-decoration: none;
+text-align: center;
+
+
+    
+}
+.head {
+    display:ruby ;
+    background-color: black;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    text-align: center;
+    
+    
+        
+    }
+.sender-column {
+text-align: right;
+
+
+
+}
