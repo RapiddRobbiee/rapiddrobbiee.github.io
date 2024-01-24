@@ -16,6 +16,16 @@
     border-radius: 5px;
 }
 
+.button-link-label {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: black; 
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: larger;
+}
+
 .subhead {
     display: block;
     background-color: #086340;
@@ -52,4 +62,3 @@
     margin-left: 20px; 
 
   }
-  
