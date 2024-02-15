@@ -1,3 +1,10 @@
+<!--
+Name: Robert Leroux
+File: index.html
+Date: 2/15/24
+This is the lab 2 part 1
+(INFT1206)
+-->
 <!DOCTYPE html>
 <html lang="en-US">
   <head>
@@ -101,13 +108,14 @@
       <h1>Mozilla</h1>
       <!-- insert <img> element, link to the small
           version of the Firefox logo -->
+        <img src="resized/firefox_logo-only_400.png" alt="Firefox Logo">
 
     </header>
 
     <main>
       <article>
         <!-- insert iframe from youtube -->
-
+        <iframe width="400" height="300" src="https://www.youtube.com/embed/ojcNcvb1olg" title="Choose Independent - Choose Firefox" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
         <h2>Rocking the free web</h2>
 
         <p>Mozilla are a global community of technologists, thinkers, and builders, working together to keep the Internet alive and accessible, so people worldwide can be informed contributors and creators of the Web. We believe this act of human collaboration across an open platform is essential to individual growth and our collective future.</p>
@@ -118,22 +126,47 @@
       <div class="further-info">
         <!-- insert images with srcsets and sizes -->
         <a href="https://www.mozilla.org/en-US/firefox/new/">
-          <img>
+          <img src="resized/firefox_logo-only_400.png"
+               alt="Firefox LOGO"
+               srcset="resized/firefox_logo-only_120.png 120w, resized/firefox_logo-only_400.png 400w"
+               sizes="(max-width: 500px) 120px, 400px">
         </a>
+        
         <a href="https://www.mozilla.org/">
-          <img>
+          <img src="resized\mozilla-dinosaur-head400.png"
+          alt="Firefox dino logo"
+          srcset="resized\mozilla-dinosaur-head120.png 120w, resized\mozilla-dinosaur-head400.png 400w"
+          sizes="(max-width: 500px) 120px, 400px">
         </a>
         <a href="https://addons.mozilla.org/">
-          <img>
+          <img src="resized\firefox-addons400.jpg"
+          alt="Firefox LOGO"
+          srcset="resized\firefox-addons120.jpg 120w, resized\firefox-addons400.jpg 400w"
+          sizes="(max-width: 500px) 120px, 400px">
         </a>
         <a href="https://developer.mozilla.org/en-US/">
-          <img>
+          <img src="resized\mdn.svg"
+          alt="Firefox LOGO"
+          srcset="resized\mdn.svg 120w, resized\mdn.svg 400w"
+          sizes="(max-width: 500px) 120px, 400px">
         </a>
         <div class="clearfix"></div>
       </div>
 
       <div class="red-panda">
         <!-- insert picture element -->
+        <picture>  
+          <source srcset="resized\red-panda_1200.jpg" media="(min-width: 1200px)">
+
+          <source srcset="resized\red-panda_600.jpg" media="(min-width: 600px)">
+
+
+          <img src="resized\red-panda_600.jpg" alt="Red Panda">
+
+
+
+
+        </picture>
       </div>
 
     </main>
