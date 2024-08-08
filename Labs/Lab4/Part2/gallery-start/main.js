@@ -19,20 +19,34 @@ const altTexts = {
   };
 /* Looping through images */
 
-for (let i = 0; i < imageFiles.length; i++) {
+for (let i = 0; i < imageNames.length; i++) {
     const img = document.createElement('img');
-    img.src = `images/${imageFiles[i]}`;
+    img.src = `images/${imageNames[i]}`;
     img.alt = `Image ${i + 1}`;
     thumbBar.appendChild(img);
     
     img.addEventListener('click', () => {
-        displayedImg.src = img.src;
-        displayedImg.alt = img.alt;
+        displayedImage.src = img.src;
+        displayedImage.alt = img.alt;
     });
 }
-const newImage = document.createElement('img');
-newImage.setAttribute('src', xxx);
-newImage.setAttribute('alt', xxx);
-thumbBar.appendChild(newImage);
+
 
 /* Wiring up the Darken/Lighten button */
+
+btn.addEventListener('click', () => {
+    console.log(btn.getAttribute("class"))  
+if (btn.getAttribute("class") === "dark"){
+
+    console.log(btn.getAttribute("class"))
+btn.setAttribute("class", "light")
+btn.textContent = "Lighten"
+overlay.style.backgroundColor = "rgb(0 0 0 / 50%)";
+
+}else if (btn.getAttribute("class") === "light"){ 
+    console.log("shou;;d darkten")
+btn.setAttribute("class", "dark")
+btn.textContent = "Darken"
+overlay.style.backgroundColor = "rgb(0 0 0 / 0%)"; }
+
+})
