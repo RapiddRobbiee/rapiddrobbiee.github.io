@@ -18,9 +18,16 @@ body {
 
 /* || typography */
 
-font[size="7"], font[size="6"], font[size="5"] {
+h1{
   font-family: 'Sonsie One', cursive;
   color: #2a2a2a;
+  font-size: 3rem;
+  text-align: center;
+}
+h2{
+  font-family: 'Sonsie One', cursive;
+  color: #2a2a2a;
+  font-size: 2.5rem;
 }
 
 p, input, li, table, label {
@@ -52,7 +59,7 @@ p, li, table {
 /* || header layout */
 
 div[class="nav"], article, footer, .secondary {
-  background-color: green;
+  background-color: rgb(40, 131, 87);
 }
 
 article, footer, .secondary {
@@ -125,6 +132,7 @@ main {
 
 article {
   flex: 5;
+  font-size: 1.5rem;
 }
 
 .secondary {
@@ -139,7 +147,7 @@ footer {
 
 table {
   width: 100%;
-  background-color: #dde;
+  background-color: rgb(151, 218, 173);
   border-collapse: collapse;
 }
 
@@ -156,7 +164,7 @@ th[scope="col"] {
 }
 
 tbody tr:nth-child(odd) {
-  background-color: #def;
+  background-color: rgb(109, 204, 137);
 }
 
 /* styling content images and audio */
