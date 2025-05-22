@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles previously in index.html <style> tag */
+body {
+  font-family: 'Rajdhani', 'Inter', sans-serif;
+  background-color: #1e1b4b; /* indigo-900 */
+  background-image:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%),
+    linear-gradient(45deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%),
+    linear-gradient(315deg, rgba(255, 255, 255, 0.03) 25%, #1e1b4b 25%);
+  background-size: 40px 40px;
+  color: #e0e7ff; /* indigo-100 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #312e81; /* indigo-800 */
+}
+::-webkit-scrollbar-thumb {
+  background: #fb923c; /* orange-400 */
+  border-radius: 5px;
+  border: 2px solid #312e81; /* indigo-800 */
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #f97316; /* orange-500 */
+}
+.font-rajdhani {
+    font-family: 'Rajdhani', sans-serif;
+}
+.font-roboto-mono {
+    font-family: 'Roboto Mono', monospace;
+}
+.code-text {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.9em;
+    color: #a5b4fc; /* indigo-300 */
+}
+
+/* Animations */
+@keyframes titleEnter {
+  0% { opacity: 0; transform: translateY(-20px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.title-animated {
+  animation: titleEnter 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  text-shadow: 0 0 10px rgba(251, 146, 60, 0.6), /* fb923c orange-400 */
+               0 0 15px rgba(249, 115, 22, 0.4);  /* f97316 orange-500 */
+}
+
+@keyframes contentFadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.content-animated-fade-in {
+  animation: contentFadeIn 0.4s ease-out forwards;
+}

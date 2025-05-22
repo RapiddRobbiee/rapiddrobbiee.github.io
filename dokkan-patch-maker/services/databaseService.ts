@@ -1,4 +1,3 @@
-
 import initSqlJs, { type Database, QueryExecResult } from 'sql.js';
 import { DokkanID, CardBasicInfo, DokkanPatchState, CardForm, CardUniqueInfo, PassiveSkillSet, LeaderSkillSet, SpecialSet, ActiveSkillSet, PassiveSkill, LeaderSkill, Special, ActiveSkillEffect, CardSpecial, CardActiveSkill } from '../types';
 import { INITIAL_CARD_FORM, generateLocalId } from '../constants';
@@ -8,7 +7,9 @@ let SQL: initSqlJs.SqlJsStatic | null = null;
 const initializeSqlJs = async (): Promise<initSqlJs.SqlJsStatic> => {
   if (!SQL) {
     try {
-      SQL = await initSqlJs({ locateFile: file => `https://unpkg.com/sql.js@1.10.3/dist/${file}` });
+      // Vite will serve files from the 'public' directory at the root.
+      // So, if sql-wasm.wasm is in public/sql-wasm.wasm, it's accessible via /sql-wasm.wasm
+      SQL = await initSqlJs({ locateFile: file => `/${file}` });
     } catch (error) {
       console.error("Failed to initialize sql.js:", error);
       throw new Error("Failed to initialize SQL.js. Check network connection or browser compatibility.");

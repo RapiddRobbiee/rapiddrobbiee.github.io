@@ -1,7 +1,8 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import App from '../App';
+import './index.css'; // Import global styles and Tailwind directives
+import '@fortawesome/fontawesome-free/css/all.min.css' ; // Import Font Awesome
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
