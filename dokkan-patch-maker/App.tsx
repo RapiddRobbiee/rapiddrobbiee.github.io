@@ -183,8 +183,9 @@ const App: React.FC = () => {
       <header className="mb-6">
         <div className="flex justify-between items-start">
             <h1 className="text-5xl font-bold text-center text-orange-400 tracking-wider font-rajdhani title-animated flex-grow">
-            Dokkan Battle Patch Maker
+            Dokkan Patch Maker
             </h1>
+     
             <div className="w-1/4 flex flex-col items-end space-y-2">
                 <label htmlFor="db-upload" className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg transition-all duration-150 ease-in-out flex items-center justify-center shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-purple-400 font-rajdhani text-sm cursor-pointer">
                     <i className="fas fa-database mr-2"></i>
@@ -199,7 +200,9 @@ const App: React.FC = () => {
                     onChange={handleDbFileChange}
                     disabled={isDbLoading}
                 />
+                
                 {dbError && <p className="text-xs text-red-400">{dbError}</p>}
+                
             </div>
         </div>
         {/* {apiKeyError && <p className="text-center text-red-400 mt-1 font-rajdhani">{apiKeyError}</p>} Gemini disabled */}
@@ -330,7 +333,11 @@ const App: React.FC = () => {
           rarityTypes={RARITY_TYPES}
         />
       )}
+       <div>
+      <p className="text-sm text-gray-400 mt-2">Made by @RapiddRobbiee</p>
     </div>
+    </div>
+   
   );
 };
 
