@@ -271,3 +271,29 @@ export interface CardBasicInfo {
   rarity: number;
   element: number;
 }
+
+// User Authentication and Management Types
+export interface UserRegistrationData {
+  username: string;
+  email: string;
+  password: string;
+}
+
+export interface LoginCredentials {
+  usernameOrEmail: string;
+  password: string;
+}
+
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  role: 'user' | 'admin';
+  created_at: string; // ISO date string
+  updated_at: string; // ISO date string
+}
+
+export interface UserWithToken {
+  user: User;
+  access_token: string;
+}

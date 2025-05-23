@@ -1,26 +1,28 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-// import { GoogleGenAI } from "@google/genai"; // Gemini disabled
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
 import { DokkanPatchState, CardForm, CardUniqueInfo, PassiveSkillSet, LeaderSkillSet, SpecialSet, ActiveSkillSet, OptimalAwakeningGrowth, DokkanID, GeminiTaskType, GeminiRequestPayload, PassiveSkillEffectEntry, EffectPackEntry } from './types';
 import { INITIAL_CARD_FORM, generateLocalId, ELEMENT_TYPES, RARITY_TYPES } from './constants';
-import { examplePatchState } from './exampleData'; 
+import { examplePatchState } from './exampleData';
 import { CharacterFormEditor } from './components/CharacterFormEditor';
 import { SqlOutputDisplay } from './components/SqlOutputDisplay';
 import { generateSqlPatch } from './services/sqlGenerator';
 import { GlobalSkillSetsEditor } from './components/GlobalSkillSetsEditor';
 import { EZAEditor } from './components/EZAEditor';
-import { MiscTablesEditor }  from './components/MiscTablesEditor';
-// import { GeminiInteractionModal } from './components/GeminiInteractionModal'; // Gemini disabled
-import { LoadCharacterModal } from './components/LoadCharacterModal'; // New Modal
-import * as dbService from './services/databaseService'; // New Service
+import { MiscTablesEditor } from './components/MiscTablesEditor';
+import { LoadCharacterModal } from './components/LoadCharacterModal';
+import * as dbService from './services/databaseService';
 import type { Database as SqlJsDatabase } from 'sql.js';
+import LoginScreen from './components/LoginScreen';
+import RegistrationForm from './components/RegistrationForm';
+import ProtectedRoute from './components/ProtectedRoute';
+import UserManagementModal from './components/UserManagementModal';
 
-
-// const aiClientApiKey = process.env.API_KEY; // Gemini disabled
 
 const App: React.FC = () => {
-  // const [apiKeyError, setApiKeyError] = useState<string | null>(null); // Gemini disabled
-  // const [ai, setAi] = useState<GoogleGenAI | null>(null); // Gemini disabled
+  const { authState, logout } = useAuth();
+  const [showUserManagementModal, setShowUserManagementModal] = useState(false);
 
   const [patchState, setPatchState] = useState<DokkanPatchState>({
     cardForms: [INITIAL_CARD_FORM()],
@@ -50,8 +52,7 @@ const App: React.FC = () => {
   const [showLoadCharacterModal, setShowLoadCharacterModal] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-
-  // useEffect(() => { // Gemini disabled
+  // useEffect(() => { // Gemini disabled - Keep this structure if needed later
   //   if (!aiClientApiKey) {
   //     setApiKeyError("API_KEY environment variable not set. Gemini features will be disabled.");
   //     console.error("API_KEY environment variable not set.");
@@ -178,32 +179,59 @@ const App: React.FC = () => {
     { name: 'Generated SQL', id: 'sqlOutput', icon: 'fa-code' },
   ];
 
-  return (
+  const MainContent: React.FC = () => (
     <div className="min-h-screen p-4 flex flex-col bg-indigo-900 text-indigo-100">
       <header className="mb-6">
-        <div className="flex justify-between items-start">
-            <h1 className="text-5xl font-bold text-center text-orange-400 tracking-wider font-rajdhani title-animated flex-grow">
+        <div className="flex justify-between items-center"> {/* items-center for vertical alignment */}
+          <h1 className="text-5xl font-bold text-center text-orange-400 tracking-wider font-rajdhani title-animated flex-grow">
             Dokkan Patch Maker
-            </h1>
-     
-            <div className="w-1/4 flex flex-col items-end space-y-2">
-                <label htmlFor="db-upload" className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg transition-all duration-150 ease-in-out flex items-center justify-center shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-purple-400 font-rajdhani text-sm cursor-pointer">
-                    <i className="fas fa-database mr-2"></i>
-                    {isDbLoading ? 'Loading DB...' : (dbInstance ? 'DB Loaded' : 'Select .db File')}
-                </label>
-                <input
-                    type="file"
-                    id="db-upload"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept=".db, .sqlite, .sqlite3"
-                    onChange={handleDbFileChange}
-                    disabled={isDbLoading}
-                />
-                
-                {dbError && <p className="text-xs text-red-400">{dbError}</p>}
-                
-            </div>
+          </h1>
+          <div className="flex flex-col items-end space-y-1"> {/* User info and auth buttons */}
+            {authState.isLoading && <p className="text-sm">Checking auth...</p>}
+            {authState.error && <p className="text-sm text-red-400">Auth Error: {authState.error}</p>}
+            {authState.currentUser ? (
+              <>
+                <p className="text-sm">Welcome, {authState.currentUser.username} ({authState.currentUser.role})</p>
+                {authState.isAdmin && (
+                  <button
+                    onClick={() => setShowUserManagementModal(true)}
+                    className="text-xs bg-purple-500 hover:bg-purple-600 text-white py-1 px-2 rounded"
+                  >
+                    Manage Users
+                  </button>
+                )}
+                <button
+                  onClick={logout}
+                  className="text-xs bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              !authState.isLoading && (
+                <div className="flex space-x-2">
+                  <Link to="/login" className="text-sm bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded">Login</Link>
+                  <Link to="/register" className="text-sm bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded">Register</Link>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+         <div className="w-1/4 flex flex-col items-end space-y-2 absolute top-4 right-4 mt-16"> {/* Adjusted positioning */}
+            <label htmlFor="db-upload" className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg transition-all duration-150 ease-in-out flex items-center justify-center shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-purple-400 font-rajdhani text-sm cursor-pointer">
+                <i className="fas fa-database mr-2"></i>
+                {isDbLoading ? 'Loading DB...' : (dbInstance ? 'DB Loaded' : 'Select .db File')}
+            </label>
+            <input
+                type="file"
+                id="db-upload"
+                ref={fileInputRef}
+                className="hidden"
+                accept=".db, .sqlite, .sqlite3"
+                onChange={handleDbFileChange}
+                disabled={isDbLoading}
+            />
+            {dbError && <p className="text-xs text-red-400">{dbError}</p>}
         </div>
         {/* {apiKeyError && <p className="text-center text-red-400 mt-1 font-rajdhani">{apiKeyError}</p>} Gemini disabled */}
       </header>
@@ -216,8 +244,8 @@ const App: React.FC = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ease-in-out focus:outline-none font-rajdhani font-semibold text-lg shadow-md hover:shadow-lg
-                  ${activeTab === tab.id 
-                    ? 'bg-orange-500 text-white transform scale-105 ring-2 ring-orange-300' 
+                  ${activeTab === tab.id
+                    ? 'bg-orange-500 text-white transform scale-105 ring-2 ring-orange-300'
                     : 'bg-indigo-700 hover:bg-indigo-600 hover:text-orange-300'}`}
               >
                 <i className={`fas ${tab.icon} mr-3 w-5 text-center`}></i>
@@ -225,34 +253,34 @@ const App: React.FC = () => {
               </button>
             ))}
           </nav>
-           <div className="mt-8 space-y-4">
+          <div className="mt-8 space-y-4">
             <button
-                onClick={() => dbInstance ? setShowLoadCharacterModal(true) : alert("Please load a database file first.")}
-                disabled={!dbInstance || isDbLoading}
-                className="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-150 ease-in-out disabled:opacity-60 flex items-center justify-center shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-teal-400 font-rajdhani text-lg"
+              onClick={() => dbInstance ? setShowLoadCharacterModal(true) : alert("Please load a database file first.")}
+              disabled={!dbInstance || isDbLoading}
+              className="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-150 ease-in-out disabled:opacity-60 flex items-center justify-center shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-teal-400 font-rajdhani text-lg"
             >
-                <i className="fas fa-user-edit mr-2"></i>
-                Load from DB
+              <i className="fas fa-user-edit mr-2"></i>
+              Load from DB
             </button>
             <button
-                onClick={handleGenerateSql}
-                disabled={isLoadingSql}
-                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-150 ease-in-out disabled:opacity-60 flex items-center justify-center shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-green-400 font-rajdhani text-lg"
+              onClick={handleGenerateSql}
+              disabled={isLoadingSql}
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-150 ease-in-out disabled:opacity-60 flex items-center justify-center shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-green-400 font-rajdhani text-lg"
             >
-                <i className="fas fa-cogs mr-2"></i>
-                {isLoadingSql ? 'Generating...' : 'Generate SQL Patch'}
+              <i className="fas fa-cogs mr-2"></i>
+              {isLoadingSql ? 'Generating...' : 'Generate SQL Patch'}
             </button>
             <button
-                onClick={handleImportExample}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-150 ease-in-out flex items-center justify-center shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400 font-rajdhani text-lg"
+              onClick={handleImportExample}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-150 ease-in-out flex items-center justify-center shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400 font-rajdhani text-lg"
             >
-                <i className="fas fa-file-import mr-2"></i>
-                Load Example Data
+              <i className="fas fa-file-import mr-2"></i>
+              Load Example Data
             </button>
           </div>
         </aside>
 
-        <main className="w-4/5 bg-gray-800 p-6 rounded-lg shadow-2xl overflow-y-auto border border-indigo-700" style={{maxHeight: 'calc(100vh - 150px)'}}> {/* Adjusted maxHeight */}
+        <main className="w-4/5 bg-gray-800 p-6 rounded-lg shadow-2xl overflow-y-auto border border-indigo-700" style={{ maxHeight: 'calc(100vh - 150px)' }}>
           {activeTab === 'cardForms' && (
             <div key="cardFormsContent" className="content-animated-fade-in">
               <h2 className="text-3xl font-semibold mb-6 text-orange-400 font-rajdhani border-b-2 border-orange-500 pb-2">Card Form Details</h2>
@@ -263,9 +291,9 @@ const App: React.FC = () => {
                   cardForm={form}
                   updateCardForm={updateCardForm}
                   removeCardForm={removeCardForm}
-                  allSkillSets={patchState} 
-                  setPatchState={setPatchState} 
-                  // openGeminiModal={openGeminiModal} // Gemini disabled
+                  allSkillSets={patchState}
+                  setPatchState={setPatchState}
+                // openGeminiModal={openGeminiModal} // Gemini disabled
                 />
               ))}
               <button
@@ -280,16 +308,16 @@ const App: React.FC = () => {
           {activeTab === 'skillSets' && (
             <div key="skillSetsContent" className="content-animated-fade-in">
               <GlobalSkillSetsEditor
-                patchState={patchState} 
-                setPatchState={setPatchState} 
-                // openGeminiModal={openGeminiModal} // Gemini disabled
+                patchState={patchState}
+                setPatchState={setPatchState}
+              // openGeminiModal={openGeminiModal} // Gemini disabled
               />
             </div>
           )}
-          
+
           {activeTab === 'ezaDetails' && (
             <div key="ezaDetailsContent" className="content-animated-fade-in">
-             <EZAEditor patchState={patchState} setPatchState={setPatchState} />
+              <EZAEditor patchState={patchState} setPatchState={setPatchState} />
             </div>
           )}
 
@@ -308,21 +336,6 @@ const App: React.FC = () => {
         </main>
       </div>
 
-      {/* GeminiInteractionModal rendering disabled */}
-      {/* {isGeminiModalOpen && geminiRequest && ai && (
-        <GeminiInteractionModal
-          ai={ai}
-          isOpen={isGeminiModalOpen}
-          onClose={() => setIsGeminiModalOpen(false)}
-          request={geminiRequest}
-          onGeneratedText={(text) => {
-            if (geminiTargetUpdater) {
-              geminiTargetUpdater(text);
-            }
-            setIsGeminiModalOpen(false);
-          }}
-        />
-      )} */}
       {dbInstance && showLoadCharacterModal && (
         <LoadCharacterModal
           isOpen={showLoadCharacterModal}
@@ -333,12 +346,38 @@ const App: React.FC = () => {
           rarityTypes={RARITY_TYPES}
         />
       )}
-       <div>
-      <p className="text-sm text-gray-400 mt-2">Made by @RapiddRobbiee</p>
+      {authState.isAdmin && showUserManagementModal && (
+        <UserManagementModal
+          isOpen={showUserManagementModal}
+          onClose={() => setShowUserManagementModal(false)}
+        />
+      )}
+      <div>
+        <p className="text-sm text-gray-400 mt-2">Made by @RapiddRobbiee</p>
+      </div>
     </div>
-    </div>
-   
+  );
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginScreen onLoginSuccess={() => { /* Potentially navigate away or refresh state */ }} />} />
+        <Route path="/register" element={<RegistrationForm />} />
+        <Route 
+          path="/" 
+          element={
+            <ProtectedRoute>
+              <MainContent />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Add other protected routes here, e.g., for admin panel */}
+        {/* <Route path="/admin" element={<ProtectedRoute adminOnly={true}><AdminPanel /></ProtectedRoute>} /> */}
+        <Route path="*" element={<Navigate to="/" replace />} /> {/* Catch-all redirects to home */}
+      </Routes>
+    </Router>
   );
 };
 
 export default App;
+

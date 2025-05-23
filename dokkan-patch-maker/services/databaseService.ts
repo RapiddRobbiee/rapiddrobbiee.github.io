@@ -1,24 +1,62 @@
 import initSqlJs, { type Database, QueryExecResult } from 'sql.js';
+import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { DokkanID, CardBasicInfo, DokkanPatchState, CardForm, CardUniqueInfo, PassiveSkillSet, LeaderSkillSet, SpecialSet, ActiveSkillSet, PassiveSkill, LeaderSkill, Special, ActiveSkillEffect, CardSpecial, CardActiveSkill } from '../types';
 import { INITIAL_CARD_FORM, generateLocalId } from '../constants';
 
 let SQL: initSqlJs.SqlJsStatic | null = null;
+const USER_DB_FILENAME = 'user_auth.db';
+const USER_DB_STORE_NAME = 'userAuthDBStore';
+const USER_DB_KEY = 'userAuthDB';
 
-const initializeSqlJs = async (): Promise<initSqlJs.SqlJsStatic> => {
-  if (!SQL) {
-    try {
-      // Vite will serve files from the 'public' directory at the root.
-      // So, if sql-wasm.wasm is in public/sql-wasm.wasm, it's accessible via /sql-wasm.wasm
-      SQL = await initSqlJs({ locateFile: file => `/${file}` });
-    } catch (error) {
-      console.error("Failed to initialize sql.js:", error);
-      throw new Error("Failed to initialize SQL.js. Check network connection or browser compatibility.");
-    }
-  }
-  return SQL;
+interface UserAuthDBSchema extends DBSchema {
+  [USER_DB_STORE_NAME]: {
+    key: string;
+    value: Uint8Array;
+  };
+}
+
+let userAuthDBInstance: Database | null = null;
+
+
+const openUserAuthIdb = async (): Promise<IDBPDatabase<UserAuthDBSchema>> => {
+  return openDB<UserAuthDBSchema>(USER_DB_FILENAME, 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains(USER_DB_STORE_NAME)) {
+        db.createObjectStore(USER_DB_STORE_NAME);
+      }
+    },
+  });
 };
 
-export const loadDatabase = async (file: File): Promise<Database> => {
+const initializeSqlJs = async (): Promise<initSqlJs.SqlJsStatic> => {
+  if (!SQL) { // Only one check needed
+    try {
+      const locateFile = (file: string) => {
+        // Check if running in a Node.js-like environment (e.g., Vitest)
+        if (typeof window === 'undefined' || (typeof process !== 'undefined' && process.versions && process.versions.node)) {
+          // Correct path for Vitest/Node.js environment assuming sql-wasm.wasm is in public/
+          // This might need to be an absolute path or a path relative to a known directory for tests.
+          // For now, using the /public/ path. If tests are run from project root, this should work.
+          // If this fails in Vitest, the mock for initializeSqlJs in the test setup is critical.
+          return `/public/${file}`; 
+        }
+        // Browser environment (Vite dev/build)
+        return `/${file}`; // Vite serves files from 'public' at the root.
+      };
+      SQL = await initSqlJs({ locateFile });
+    } catch (error) {
+      console.error("Failed to initialize sql.js:", error);
+      // More specific error for WASM loading issues
+      if (error instanceof Error && error.message.toLowerCase().includes('instantiate streaming')) {
+        throw new Error("Failed to initialize SQL.js: Could not load Wasm module. Ensure 'sql-wasm.wasm' is accessible. Check network or if it's in your 'public' directory.");
+      }
+      throw new Error("Failed to initialize SQL.js. Check network connection or browser compatibility.");
+    }
+  } // Corrected: This brace closes the `if (!SQL)` block.
+  return SQL;
+}; // Corrected: This brace closes the function `initializeSqlJs`.
+
+export const loadDatabase = async (file: File): Promise<Database> => { // This is for the main game database
   const sqlJsStatic = await initializeSqlJs();
   const fileBuffer = await file.arrayBuffer();
   try {
@@ -142,6 +180,71 @@ export const searchCharactersByName = async (
     throw new Error("Failed to search characters in the database.");
   }
 };
+
+// User Authentication Database Functions
+const initializeUserTable = (db: Database): void => {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+  db.exec(`
+    CREATE TRIGGER IF NOT EXISTS update_users_updated_at
+    AFTER UPDATE ON users
+    FOR EACH ROW
+    BEGIN
+        UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+    END;
+  `);
+};
+
+export const getUserAuthDB = async (): Promise<Database> => {
+  if (userAuthDBInstance) {
+    return userAuthDBInstance;
+  }
+
+  const sqlJsStatic = await initializeSqlJs();
+  const idb = await openUserAuthIdb();
+  const dbData = await idb.get(USER_DB_STORE_NAME, USER_DB_KEY);
+
+  if (dbData) {
+    try {
+      userAuthDBInstance = new sqlJsStatic.Database(dbData);
+    } catch (error) {
+      console.error("Error loading user auth database from IndexedDB:", error);
+      // If loading fails (e.g. corrupted data), create a new one
+      userAuthDBInstance = new sqlJsStatic.Database();
+    }
+  } else {
+    userAuthDBInstance = new sqlJsStatic.Database();
+  }
+
+  initializeUserTable(userAuthDBInstance);
+  // Persist immediately after creation/initialization if it was new or failed to load
+  await saveUserAuthDB(userAuthDBInstance); 
+
+  return userAuthDBInstance;
+};
+
+export const saveUserAuthDB = async (db: Database): Promise<void> => {
+  try {
+    const data = db.export();
+    const idb = await openUserAuthIdb();
+    await idb.put(USER_DB_STORE_NAME, data, USER_DB_KEY);
+    console.log("User auth database saved to IndexedDB.");
+  } catch (error) {
+    console.error("Error saving user auth database to IndexedDB:", error);
+    throw new Error("Failed to save user authentication database.");
+  }
+};
+// End User Authentication Database Functions
+
 
 const getVal = <T>(val: any, defaultVal: T): T => (val !== null && val !== undefined ? val : defaultVal);
 
@@ -372,17 +475,19 @@ const _fetchSingleCardFormDetails = async (db: Database, cardId: DokkanID): Prom
 
 export const getCharacterDetails = async (db: Database, selectedCardId: DokkanID): Promise<DokkanPatchState | null> => {
   try {
-    const baseIdStr = selectedCardId.substring(0, selectedCardId.length - 1);
+    // Ensure selectedID is treated as a string for substring operations
+    const idStr = String(selectedCardId);
+    const baseIdStr = idStr.substring(0, idStr.length - 1);
     const idFor0 = baseIdStr + "0";
     const idFor1 = baseIdStr + "1";
 
-    const details0 = await _fetchSingleCardFormDetails(db, idFor0);
-    const details1 = await _fetchSingleCardFormDetails(db, idFor1);
+    const details0 = await _fetchSingleCardFormDetails(db, idFor0 as DokkanID);
+    const details1 = await _fetchSingleCardFormDetails(db, idFor1 as DokkanID);
 
     if (!details0 && !details1) {
       // If neither form is found, try fetching the originally selected ID directly
       // This handles cases where the ID doesn't follow the 0/1 pattern or only one was intended.
-      const singleDetails = await _fetchSingleCardFormDetails(db, selectedCardId);
+      const singleDetails = await _fetchSingleCardFormDetails(db, idStr as DokkanID);
       if (!singleDetails) return null;
       return {
           cardForms: singleDetails.cardForms || [],
