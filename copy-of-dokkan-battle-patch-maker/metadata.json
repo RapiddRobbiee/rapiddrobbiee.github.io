@@ -1,0 +1,6 @@
+{
+  "name": "Copy of Dokkan Battle Patch Maker",
+  "description": "A web application to help create and manage SQL patches for Dokkan Battle, with AI assistance for descriptions and skill definitions.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
