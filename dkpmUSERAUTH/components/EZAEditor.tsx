@@ -1,7 +1,8 @@
 
-import React from 'react';
-import { DokkanPatchState, OptimalAwakeningGrowth } from '../types';
-import { FormInput, FormCheckbox, FormSelect } from './FormControls'; // Assuming FormSelect exists
+import React, { useEffect } from 'react';
+import { DokkanPatchState, OptimalAwakeningGrowth, DokkanID } from '../types';
+import { FormInput, FormCheckbox, FormSelect } from './FormControls';
+import { ID_PREFIXES, isLocallyGeneratedId, generateLocalId } from '../constants';
 
 interface EZAEditorProps {
   patchState: DokkanPatchState;
@@ -9,20 +10,52 @@ interface EZAEditorProps {
 }
 
 export const EZAEditor: React.FC<EZAEditorProps> = ({ patchState, setPatchState }) => {
+  
+  useEffect(() => {
+    if (patchState.isEZA && patchState.baseCardIdForEZA && isLocallyGeneratedId(patchState.baseCardIdForEZA)) {
+      setPatchState(prev => {
+        if (!prev.optimalAwakeningGrowth) return prev; // Should not happen if isEZA is true
+        
+        const newOagId = ID_PREFIXES.OPTIMAL_AWAKENING_GROWTH_ID + prev.baseCardIdForEZA;
+        const newOagTypeId = ID_PREFIXES.OPTIMAL_AWAKENING_GROWTH_TYPE_ID + prev.baseCardIdForEZA;
+        
+        if (prev.optimalAwakeningGrowth.id !== newOagId || prev.optimalAwakeningGrowth.growth_type_id !== newOagTypeId) {
+          return {
+            ...prev,
+            optimalAwakeningGrowth: {
+              ...prev.optimalAwakeningGrowth,
+              id: newOagId,
+              growth_type_id: newOagTypeId,
+            }
+          };
+        }
+        return prev;
+      });
+    }
+  }, [patchState.isEZA, patchState.baseCardIdForEZA, setPatchState]);
+
+
   const handleIsEZAChange = (checked: boolean) => {
-    setPatchState(prev => ({
-      ...prev,
-      isEZA: checked,
-      optimalAwakeningGrowth: checked ? (prev.optimalAwakeningGrowth || {
-        id: `eza_growth_${prev.baseCardIdForEZA || 'new'}`, // Example ID generation
-        growth_type_id: `eza_type_${prev.baseCardIdForEZA || 'new'}`,
-        val1_eza_marker: 7, // Default for UR
-        val2_max_level: 140,
-        val3_skill_lv_max: 15,
-        passive_skill_set_id: '', // User needs to select or input
-        leader_skill_set_id: '', // User needs to select or input
-      }) : undefined,
-    }));
+    setPatchState(prev => {
+      const baseCardId = prev.baseCardIdForEZA || generateLocalId(); // Use existing or generate new if needed
+      const oagId = isLocallyGeneratedId(baseCardId) ? ID_PREFIXES.OPTIMAL_AWAKENING_GROWTH_ID + baseCardId : generateLocalId();
+      const oagTypeId = isLocallyGeneratedId(baseCardId) ? ID_PREFIXES.OPTIMAL_AWAKENING_GROWTH_TYPE_ID + baseCardId : generateLocalId();
+
+      return {
+        ...prev,
+        isEZA: checked,
+        baseCardIdForEZA: checked && !prev.baseCardIdForEZA ? baseCardId : prev.baseCardIdForEZA,
+        optimalAwakeningGrowth: checked ? (prev.optimalAwakeningGrowth || {
+          id: oagId,
+          growth_type_id: oagTypeId,
+          val1_eza_marker: 7,
+          val2_max_level: 140,
+          val3_skill_lv_max: 15,
+          passive_skill_set_id: '',
+          leader_skill_set_id: '',
+        }) : undefined,
+      };
+    });
   };
 
   const handleBaseCardIdChange = (value: string) => {
@@ -34,7 +67,7 @@ export const EZAEditor: React.FC<EZAEditorProps> = ({ patchState, setPatchState 
       ...prev,
       optimalAwakeningGrowth: prev.optimalAwakeningGrowth
         ? { ...prev.optimalAwakeningGrowth, [field]: value }
-        : undefined, // Should not happen if isEZA is true
+        : undefined,
     }));
   };
 
@@ -58,6 +91,7 @@ export const EZAEditor: React.FC<EZAEditorProps> = ({ patchState, setPatchState 
             placeholder="e.g., 1024061 (Original Card ID)"
             helpText="The ID of the card that is being EZA'd. This is used in the `UPDATE cards ...` statement."
             className="font-roboto-mono"
+            disabled={!isLocallyGeneratedId(patchState.baseCardIdForEZA || '')}
           />
 
           {patchState.optimalAwakeningGrowth && (
@@ -68,15 +102,17 @@ export const EZAEditor: React.FC<EZAEditorProps> = ({ patchState, setPatchState 
                   label="Row ID (optimal_awakening_growths)"
                   value={patchState.optimalAwakeningGrowth.id}
                   onChange={(val) => handleOptimalGrowthChange('id', val)}
-                  placeholder="Unique ID for this EZA growth entry"
+                  placeholder="Derived from Base Card ID"
                   className="font-roboto-mono"
+                  disabled={!isLocallyGeneratedId(patchState.optimalAwakeningGrowth.id)}
                 />
                 <FormInput
                   label="Growth Type ID (used in cards table)"
                   value={patchState.optimalAwakeningGrowth.growth_type_id}
                   onChange={(val) => handleOptimalGrowthChange('growth_type_id', val)}
-                  placeholder="Unique ID for this EZA type"
+                  placeholder="Derived from Base Card ID"
                   className="font-roboto-mono"
+                  disabled={!isLocallyGeneratedId(patchState.optimalAwakeningGrowth.growth_type_id)}
                 />
                 <FormInput
                   label="EZA Marker (val1)"

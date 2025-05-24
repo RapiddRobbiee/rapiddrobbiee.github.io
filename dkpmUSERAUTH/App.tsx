@@ -1,8 +1,9 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-// import { GoogleGenAI } from "@google/genai"; // Gemini disabled
+import { User } from 'firebase/auth';
+import * as authService from './services/authService';
 import { DokkanPatchState, CardForm, CardUniqueInfo, PassiveSkillSet, LeaderSkillSet, SpecialSet, ActiveSkillSet, OptimalAwakeningGrowth, DokkanID, GeminiTaskType, GeminiRequestPayload, PassiveSkillEffectEntry, EffectPackEntry, CardSpecial } from './types';
-import { INITIAL_CARD_FORM, generateLocalId, ELEMENT_TYPES, RARITY_TYPES } from './constants';
+import { INITIAL_CARD_FORM, generateLocalId, ELEMENT_TYPES, RARITY_TYPES, ID_PREFIXES, isLocallyGeneratedId, INITIAL_CARD_SPECIAL } from './constants';
 import { examplePatchState } from './exampleData'; 
 import { CharacterFormEditor } from './components/CharacterFormEditor';
 import { SqlOutputDisplay } from './components/SqlOutputDisplay';
@@ -11,55 +12,24 @@ import { GlobalSkillSetsEditor } from './components/GlobalSkillSetsEditor';
 import { EZAEditor } from './components/EZAEditor';
 import { MiscTablesEditor }  from './components/MiscTablesEditor';
 // import { GeminiInteractionModal } from './components/GeminiInteractionModal'; // Gemini disabled
-import { LoadCharacterModal } from './components/LoadCharacterModal'; // New Modal
-import * as dbService from './services/databaseService'; // New Service
+import { LoadCharacterModal } from './components/LoadCharacterModal'; 
+import * as dbService from './services/databaseService'; 
 import type { Database as SqlJsDatabase } from 'sql.js';
 import { LoginScreen } from './components/LoginScreen';
 
 
 // const aiClientApiKey = process.env.API_KEY; // Gemini disabled
 
-// Add TypeScript declaration for the Google Sign-In client library
-declare global {
-  interface Window {
-    google: any; 
-  }
-}
-
-// Helper function to parse JWT (simplified, no signature verification)
-function parseJwt(token: string) {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(function (c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        })
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    console.error('Error parsing JWT', e);
-    return null;
-  }
-}
-
-interface GoogleUser {
-  name?: string;
-  email?: string;
-  picture?: string;
-}
-
-// IMPORTANT: Replace with your actual Google Client ID
-const GOOGLE_CLIENT_ID = '467611877502-befjj3lrkf3j2g0m4tnjcfq5ghvgrjmg.apps.googleusercontent.com';
-const isPlaceholderClientId = GOOGLE_CLIENT_ID === '467611877502-befjj3lrkf3j2g0m4tnjcfq5ghvgrjmg.apps.googleusercontent.com';
-
+// Google Sign-In client library (GSI) global declaration is no longer needed
+// declare global {
+//   interface Window {
+//     google: any; 
+//   }
+// }
 
 const App: React.FC = () => {
-  // const [apiKeyError, setApiKeyError] = useState<string | null>(null); // Gemini disabled
-  // const [ai, setAi] = useState<GoogleGenAI | null>(null); // Gemini disabled
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
 
   const [patchState, setPatchState] = useState<DokkanPatchState>({
     cardForms: [INITIAL_CARD_FORM()],
@@ -68,7 +38,7 @@ const App: React.FC = () => {
     leaderSkillSets: [],
     specialSets: [],
     activeSkillSets: [],
-    cardSpecials: [], // Added for multiple special attacks
+    cardSpecials: [],
     passiveSkillEffects: [],
     effectPacks: [],
     isEZA: false,
@@ -78,98 +48,32 @@ const App: React.FC = () => {
   const [isLoadingSql, setIsLoadingSql] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>('cardForms');
   
-  // Gemini related state - disabled
-  // const [isGeminiModalOpen, setIsGeminiModalOpen] = useState(false);
-  // const [geminiRequest, setGeminiRequest] = useState<GeminiRequestPayload | null>(null);
-  // const [geminiTargetUpdater, setGeminiTargetUpdater] = useState<((text: string) => void) | null>(null);
-
-  // Database related state
   const [dbInstance, setDbInstance] = useState<SqlJsDatabase | null>(null);
   const [isDbLoading, setIsDbLoading] = useState<boolean>(false);
   const [dbError, setDbError] = useState<string | null>(null);
   const [showLoadCharacterModal, setShowLoadCharacterModal] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Google Sign-In state
-  const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
-  const [isGoogleAuthInitialized, setIsGoogleAuthInitialized] = useState<boolean>(false);
-
-
-  // useEffect(() => { // Gemini disabled
-  //   if (!aiClientApiKey) {
-  //     setApiKeyError("API_KEY environment variable not set. Gemini features will be disabled.");
-  //     console.error("API_KEY environment variable not set.");
-  //   } else {
-  //     try {
-  //       setAi(new GoogleGenAI({ apiKey: aiClientApiKey }));
-  //     } catch (error) {
-  //       console.error("Error initializing GoogleGenAI:", error);
-  //       setApiKeyError("Failed to initialize Gemini AI. Check API Key and network.");
-  //     }
-  //   }
-  // }, []);
-
-  const handleCredentialResponse = useCallback((response: any /* google.accounts.id.CredentialResponse */) => {
-    const decodedToken: any = parseJwt(response.credential);
-    if (decodedToken) {
-      setGoogleUser({
-        name: decodedToken.name,
-        email: decodedToken.email,
-        picture: decodedToken.picture,
-      });
-    } else {
-      console.error('Failed to decode JWT token from Google.');
-      // setApiKeyError("Failed to process Google Sign-In response."); // Consider a different error state
-    }
+  useEffect(() => {
+    authService.initializeFirebaseApp(); // Initialize Firebase
+    const unsubscribe = authService.onAuthChange(user => {
+      setCurrentUser(user);
+      setIsAuthLoading(false);
+    });
+    return () => unsubscribe(); // Cleanup subscription
   }, []);
 
-
-  const initializeGoogleSignIn = useCallback(() => {
-    if (isGoogleAuthInitialized || typeof window.google === 'undefined' || !window.google.accounts || !window.google.accounts.id) {
-      return;
-    }
-
+  const handleSignOut = async () => {
     try {
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleCredentialResponse,
-        auto_select: true,
-        use_fedcm_for_prompt: false // Disable FedCM for OneTap to avoid NotAllowedError if Permissions-Policy isn't effective
-      });
-      setIsGoogleAuthInitialized(true);
+      await authService.logout();
+      // setCurrentUser(null) will be handled by onAuthChange
+      alert("Signed out successfully.");
     } catch (error) {
-      console.error('Error initializing Google Sign-In:', error);
-      // You could set an error state here to inform the user
-    }
-  }, [isGoogleAuthInitialized, handleCredentialResponse]);
-
-  useEffect(() => {
-    // GIS script is loaded async defer, so we need to ensure it's ready.
-    const gsiScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
-    if (gsiScript) {
-      if (window.google && window.google.accounts && window.google.accounts.id) {
-        // Already loaded
-        initializeGoogleSignIn();
-      } else {
-        // Wait for it to load
-        (gsiScript as HTMLScriptElement).onload = () => {
-          initializeGoogleSignIn();
-        };
-      }
-    } else {
-      console.error("Google GSI script not found. Ensure it's in index.html.");
-    }
-  }, [initializeGoogleSignIn]);
-
-
-  const handleSignOut = () => {
-    setGoogleUser(null);
-    if (window.google && window.google.accounts && window.google.accounts.id) {
-      window.google.accounts.id.disableAutoSelect();
-      // If you want to revoke the token:
-      // window.google.accounts.id.revoke(userEmail, () => {});
+      console.error("Sign out error:", error);
+      alert(`Failed to sign out: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
+
 
   const handleDbFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -204,32 +108,123 @@ const App: React.FC = () => {
 
 
   const updateCardForm = useCallback((index: number, updatedForm: CardForm) => {
-    setPatchState(prev => ({
-      ...prev,
-      cardForms: prev.cardForms.map((form, i) => i === index ? updatedForm : form)
-    }));
+    setPatchState(prev => {
+      const oldForm = prev.cardForms[index];
+      let newPatchState = { ...prev };
+      const updatedCardForms = prev.cardForms.map((form, i) => i === index ? updatedForm : form);
+      newPatchState.cardForms = updatedCardForms;
+
+      if (oldForm.id !== updatedForm.id && isLocallyGeneratedId(oldForm.id)) {
+        const oldCardId = oldForm.id;
+        const newCardId = updatedForm.id;
+
+        const oldUniqueInfoId = ID_PREFIXES.CARD_UNIQUE_INFO + oldCardId;
+        if (isLocallyGeneratedId(oldUniqueInfoId)) {
+            const newUniqueInfoId = ID_PREFIXES.CARD_UNIQUE_INFO + newCardId;
+            newPatchState.cardUniqueInfos = prev.cardUniqueInfos.map(cui =>
+                cui.id === oldUniqueInfoId ? { ...cui, id: newUniqueInfoId } : cui
+            );
+            if (updatedForm.card_unique_info_id === oldUniqueInfoId) {
+                 updatedForm.card_unique_info_id = newUniqueInfoId;
+            }
+        }
+        const skillSetTypesToUpdate: {
+            key: keyof DokkanPatchState; 
+            idField: keyof CardForm; 
+            prefix: typeof ID_PREFIXES[keyof typeof ID_PREFIXES];
+        }[] = [
+            { key: 'passiveSkillSets', idField: 'passive_skill_set_id', prefix: ID_PREFIXES.PASSIVE_SKILL_SET },
+            { key: 'leaderSkillSets', idField: 'leader_skill_set_id', prefix: ID_PREFIXES.LEADER_SKILL_SET },
+            { key: 'activeSkillSets', idField: 'active_skill_set_id_ref', prefix: ID_PREFIXES.ACTIVE_SKILL_SET },
+            { key: 'specialSets', idField: 'id', prefix: ID_PREFIXES.SPECIAL_SET } 
+        ];
+
+        skillSetTypesToUpdate.forEach(skillInfo => {
+            const oldSetId = skillInfo.prefix + oldCardId;
+            if (isLocallyGeneratedId(oldSetId)) {
+                const newSetId = skillInfo.prefix + newCardId;
+                (newPatchState[skillInfo.key] as Array<{id: DokkanID}>) = 
+                    (prev[skillInfo.key] as Array<{id: DokkanID}>).map(set =>
+                        set.id === oldSetId ? { ...set, id: newSetId } : set
+                    );
+                
+                if (skillInfo.idField !== 'id' && (updatedForm[skillInfo.idField] as string) === oldSetId) {
+                    (updatedForm[skillInfo.idField] as string) = newSetId;
+                }
+                if (skillInfo.key === 'specialSets') {
+                    newPatchState.cardSpecials = newPatchState.cardSpecials.map(cs => 
+                        cs.special_set_id === oldSetId && cs.card_id === oldCardId
+                            ? { ...cs, special_set_id: newSetId, card_id: newCardId } 
+                            : cs.card_id === oldCardId 
+                                ? {...cs, card_id: newCardId }
+                                : cs
+                    );
+                }
+            }
+        });
+        
+        newPatchState.cardSpecials = newPatchState.cardSpecials.map(cs => 
+            cs.card_id === oldCardId ? { ...cs, card_id: newCardId } : cs
+        );
+
+        if (prev.isEZA && prev.optimalAwakeningGrowth && prev.baseCardIdForEZA === oldCardId) {
+            const oldOagId = ID_PREFIXES.OPTIMAL_AWAKENING_GROWTH_ID + oldCardId;
+            const oldOagTypeId = ID_PREFIXES.OPTIMAL_AWAKENING_GROWTH_TYPE_ID + oldCardId;
+            let updatedOag = { ...prev.optimalAwakeningGrowth };
+
+            if (isLocallyGeneratedId(oldOagId)) {
+                updatedOag.id = ID_PREFIXES.OPTIMAL_AWAKENING_GROWTH_ID + newCardId;
+            }
+            if (isLocallyGeneratedId(oldOagTypeId)) {
+                updatedOag.growth_type_id = ID_PREFIXES.OPTIMAL_AWAKENING_GROWTH_TYPE_ID + newCardId;
+            }
+            newPatchState.optimalAwakeningGrowth = updatedOag;
+            if (updatedForm.hasOwnProperty('optimal_awakening_grow_type') && (updatedForm as any).optimal_awakening_grow_type === oldOagTypeId) {
+                (updatedForm as any).optimal_awakening_grow_type = updatedOag.growth_type_id;
+            }
+        }
+         newPatchState.cardForms = prev.cardForms.map((form, i) => i === index ? updatedForm : form);
+      }
+      return newPatchState;
+    });
   }, []);
 
   const addCardForm = useCallback(() => {
-    const newFormId = generateLocalId('cardForm');
-    const newUniqueInfoId = generateLocalId('uniqueInfo');
-    const newPassiveSetId = generateLocalId('passiveSet');
-    const newActiveSetId = generateLocalId('activeSet');
+    const newCardFormId = generateLocalId();
     
+    const newUniqueInfoId = ID_PREFIXES.CARD_UNIQUE_INFO + newCardFormId;
+    const newPassiveSetId = ID_PREFIXES.PASSIVE_SKILL_SET + newCardFormId;
+    const newLeaderSetId = ID_PREFIXES.LEADER_SKILL_SET + newCardFormId;
+    const newActiveSetId = ID_PREFIXES.ACTIVE_SKILL_SET + newCardFormId;
+    const newSpecialSetId = ID_PREFIXES.SPECIAL_SET + newCardFormId;
+
     const newCardForm: CardForm = {
       ...INITIAL_CARD_FORM(),
-      id: newFormId,
+      id: newCardFormId,
+      name: `New Card ${newCardFormId}`,
       card_unique_info_id: newUniqueInfoId,
       passive_skill_set_id: newPassiveSetId,
+      leader_skill_set_id: newLeaderSetId,
       active_skill_set_id_ref: newActiveSetId,
     };
+
+    const newUniqueInfo: CardUniqueInfo = { id: newUniqueInfoId, name: `Character Name for ${newCardFormId}` };
+    const newPassiveSet: PassiveSkillSet = { id: newPassiveSetId, name: `Passive for ${newCardFormId}`, description: '', skills: [] };
+    const newLeaderSet: LeaderSkillSet = { id: newLeaderSetId, name: `Leader for ${newCardFormId}`, description: '', skills: [] };
+    const newActiveSet: ActiveSkillSet = { id: newActiveSetId, name: `Active for ${newCardFormId}`, effect_description: '', condition_description: '', turn: 1, exec_limit: 1, skills: [] };
+    const newSpecialSet: SpecialSet = { id: newSpecialSetId, name: `Special for ${newCardFormId}`, description: '', skills: [], aim_target: 0, increase_rate: 180, lv_bonus: 25, is_inactive: 0 };
+    
+    const newDefaultCardSpecial = INITIAL_CARD_SPECIAL(newCardFormId, newSpecialSetId);
 
     setPatchState(prev => ({
       ...prev,
       cardForms: [...prev.cardForms, newCardForm],
-      cardUniqueInfos: [...prev.cardUniqueInfos, { id: newUniqueInfoId, name: `Character Name ${prev.cardUniqueInfos.length + 1}` }],
-      passiveSkillSets: [...prev.passiveSkillSets, { id: newPassiveSetId, name: `Passive ${prev.passiveSkillSets.length + 1}`, description: '', skills: [] }],
-      activeSkillSets: [...prev.activeSkillSets, {id: newActiveSetId, name: `Active ${prev.activeSkillSets.length + 1}`, effect_description: '', condition_description: '', turn:1, exec_limit:1, skills:[]}]
+      cardUniqueInfos: [...prev.cardUniqueInfos, newUniqueInfo],
+      passiveSkillSets: [...prev.passiveSkillSets, newPassiveSet],
+      leaderSkillSets: [...prev.leaderSkillSets, newLeaderSet],
+      activeSkillSets: [...prev.activeSkillSets, newActiveSet],
+      specialSets: [...prev.specialSets, newSpecialSet],
+      cardSpecials: [...prev.cardSpecials, newDefaultCardSpecial],
     }));
   }, []);
 
@@ -273,13 +268,17 @@ const App: React.FC = () => {
     { name: 'Generated SQL', id: 'sqlOutput', icon: 'fa-code' },
   ];
 
-  if (!googleUser) {
+  if (isAuthLoading) {
     return (
-      <LoginScreen 
-        isGoogleAuthInitialized={isGoogleAuthInitialized}
-        googleClientIdWarning={isPlaceholderClientId}
-      />
+      <div className="min-h-screen flex items-center justify-center bg-indigo-900 text-orange-400 font-rajdhani">
+        <i className="fas fa-spinner fa-spin text-5xl"></i>
+        <p className="ml-4 text-2xl">Loading Application...</p>
+      </div>
     );
+  }
+
+  if (!currentUser) {
+    return <LoginScreen />;
   }
 
   return (
@@ -290,6 +289,20 @@ const App: React.FC = () => {
                 Dokkan Battle Patch Maker
             </h1>
             <div className="flex items-center space-x-4">
+                 {currentUser && (
+                    <div className="flex items-center space-x-3 text-sm">
+                        {currentUser.photoURL && <img src={currentUser.photoURL} alt="User" className="w-8 h-8 rounded-full"/>}
+                        <span className="text-indigo-200 hidden md:inline">{currentUser.displayName || currentUser.email}</span>
+                        <button 
+                            onClick={handleSignOut}
+                            className="bg-red-500 hover:bg-red-600 text-white font-bold py-1.5 px-3 rounded-lg transition-all duration-150 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-400 font-rajdhani text-xs"
+                            title="Sign Out"
+                        >
+                            <i className="fas fa-sign-out-alt"></i>
+                            <span className="ml-1 hidden lg:inline">Sign Out</span>
+                        </button>
+                    </div>
+                )}
                 <div className="flex flex-col items-end">
                     <label htmlFor="db-upload" className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg transition-all duration-150 ease-in-out flex items-center justify-center shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-purple-400 font-rajdhani text-sm cursor-pointer h-[38px]">
                         <i className="fas fa-database mr-2"></i>
@@ -306,30 +319,8 @@ const App: React.FC = () => {
                     />
                     {dbError && <p className="text-xs text-red-400 mt-1 self-center">{dbError}</p>}
                 </div>
-
-                {googleUser && ( 
-                    <div className="flex items-center space-x-2 bg-indigo-700 bg-opacity-50 p-1 pr-2 rounded-lg shadow-md h-[38px]">
-                        {googleUser.picture && <img src={googleUser.picture} alt={googleUser.name || 'User'} className="w-7 h-7 rounded-full border-2 border-orange-400" />}
-                        <div className="flex flex-col items-start">
-                          <span className="text-xs text-indigo-100 font-rajdhani font-semibold truncate max-w-[100px] sm:max-w-[150px]" title={googleUser.name || googleUser.email}>{googleUser.name || googleUser.email}</span>
-                        </div>
-                        <button
-                            onClick={handleSignOut}
-                            className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1 px-2 rounded-md transition-colors duration-150 ease-in-out shadow-sm hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-300"
-                            aria-label="Sign out"
-                        >
-                            <i className="fas fa-sign-out-alt"></i>
-                        </button>
-                    </div>
-                )}
             </div>
         </div>
-        {/* {apiKeyError && <p className="text-center text-red-400 mt-1 font-rajdhani">{apiKeyError}</p>} Gemini disabled */}
-        { isPlaceholderClientId && 
-          <p className="text-center text-yellow-400 text-xs mt-1 font-rajdhani bg-yellow-900 bg-opacity-50 p-1 rounded-md">
-            <i className="fas fa-exclamation-triangle mr-1"></i> Developer Note: Google Sign-In requires a valid Client ID. Please replace the placeholder in App.tsx.
-          </p>
-        }
       </header>
 
       <div className="flex-grow flex">
@@ -376,7 +367,7 @@ const App: React.FC = () => {
           </div>
         </aside>
 
-        <main className="w-4/5 bg-gray-800 p-6 rounded-lg shadow-2xl overflow-y-auto border border-indigo-700" style={{maxHeight: 'calc(100vh - 180px)'}}> {/* Adjusted maxHeight for new header */}
+        <main className="w-4/5 bg-gray-800 p-6 rounded-lg shadow-2xl overflow-y-auto border border-indigo-700" style={{maxHeight: 'calc(100vh - 180px)'}}>
           {activeTab === 'cardForms' && (
             <div key="cardFormsContent" className="content-animated-fade-in">
               <h2 className="text-3xl font-semibold mb-6 text-orange-400 font-rajdhani border-b-2 border-orange-500 pb-2">Card Form Details</h2>
@@ -388,8 +379,7 @@ const App: React.FC = () => {
                   updateCardForm={updateCardForm}
                   removeCardForm={(idx) => removeCardForm(idx, form.id)} 
                   patchState={patchState} 
-                  setPatchState={setPatchState} 
-                  // openGeminiModal={openGeminiModal} // Gemini disabled
+                  setPatchState={setPatchState}
                 />
               ))}
               <button
@@ -405,8 +395,7 @@ const App: React.FC = () => {
             <div key="skillSetsContent" className="content-animated-fade-in">
               <GlobalSkillSetsEditor
                 patchState={patchState} 
-                setPatchState={setPatchState} 
-                // openGeminiModal={openGeminiModal} // Gemini disabled
+                setPatchState={setPatchState}
               />
             </div>
           )}
@@ -432,7 +421,6 @@ const App: React.FC = () => {
         </main>
       </div>
       
-      {/* GeminiInteractionModal rendering disabled */}
       {dbInstance && showLoadCharacterModal && (
         <LoadCharacterModal
           isOpen={showLoadCharacterModal}

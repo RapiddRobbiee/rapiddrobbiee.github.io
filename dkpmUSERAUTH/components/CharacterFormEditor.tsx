@@ -1,7 +1,7 @@
 
 import React, { useCallback } from 'react';
 import { CardForm, DokkanPatchState, DokkanID, CardSpecial, SpecialSet } from '../types';
-import { ELEMENT_TYPE_OPTIONS, RARITY_TYPE_OPTIONS, INITIAL_CARD_SPECIAL, generateLocalId } from '../constants';
+import { ELEMENT_TYPE_OPTIONS, RARITY_TYPE_OPTIONS, INITIAL_CARD_SPECIAL, generateLocalId, isLocallyGeneratedId, ID_PREFIXES } from '../constants';
 import { FormInput, FormSelect, FormTextArea, FormCheckbox } from './FormControls';
 
 interface CharacterFormEditorProps {
@@ -9,14 +9,12 @@ interface CharacterFormEditorProps {
   cardForm: CardForm;
   updateCardForm: (index: number, updatedForm: CardForm) => void;
   removeCardForm: (index: number) => void;
-  patchState: DokkanPatchState; // Changed from allSkillSets to full patchState
+  patchState: DokkanPatchState;
   setPatchState: React.Dispatch<React.SetStateAction<DokkanPatchState>>;
-  // openGeminiModal: (taskType: GeminiTaskType, data: any, updater: (text: string) => void) => void; // Gemini disabled
 }
 
 export const CharacterFormEditor: React.FC<CharacterFormEditorProps> = ({
   formIndex, cardForm, updateCardForm, removeCardForm, patchState, setPatchState,
-  // openGeminiModal // Gemini disabled
 }) => {
   
   const handleChange = useCallback((field: keyof CardForm, value: any) => {
@@ -47,11 +45,13 @@ export const CharacterFormEditor: React.FC<CharacterFormEditorProps> = ({
     handleChange('category_ids', newCategories);
   }, [cardForm.category_ids, handleChange]);
 
-  // CardSpecial handlers
   const cardSpecialsForThisForm = patchState.cardSpecials.filter(cs => cs.card_id === cardForm.id);
 
   const handleAddCardSpecial = () => {
-    const newCardSpecial = INITIAL_CARD_SPECIAL(cardForm.id);
+    const defaultSpecialSetId = isLocallyGeneratedId(cardForm.id) 
+                                ? ID_PREFIXES.SPECIAL_SET + cardForm.id 
+                                : undefined;
+    const newCardSpecial = INITIAL_CARD_SPECIAL(cardForm.id, defaultSpecialSetId);
     setPatchState(prev => ({
       ...prev,
       cardSpecials: [...prev.cardSpecials, newCardSpecial]
@@ -85,7 +85,7 @@ export const CharacterFormEditor: React.FC<CharacterFormEditorProps> = ({
           Card Form {formIndex + 1} 
           <span className="text-sm text-indigo-300 ml-2 code-text">(ID: {cardForm.id || 'Not Set'})</span>
         </h3>
-        {patchState.cardForms.length > 1 && ( // Show remove button if more than one card form exists
+        {patchState.cardForms.length > 1 && (
            <button onClick={() => removeCardForm(formIndex)} className="text-red-400 hover:text-red-500 transition-colors font-semibold py-1 px-3 rounded-md bg-red-900 bg-opacity-30 hover:bg-opacity-50 border border-red-500">
             <i className="fas fa-trash-alt mr-1"></i> Remove Form
           </button>
@@ -93,10 +93,10 @@ export const CharacterFormEditor: React.FC<CharacterFormEditorProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-        <FormInput label="Card ID" value={cardForm.id} onChange={(val) => handleChange('id', val)} placeholder="e.g., 1062320" type="text" className="font-roboto-mono"/>
+        <FormInput label="Card ID" value={cardForm.id} onChange={(val) => handleChange('id', val)} placeholder="e.g., 7000001" type="text" className="font-roboto-mono" disabled={!isLocallyGeneratedId(cardForm.id)} />
         <FormInput label="Name" value={cardForm.name} onChange={(val) => handleChange('name', val)} />
         <FormInput label="Character ID" value={cardForm.character_id} onChange={(val) => handleChange('character_id', val)} className="font-roboto-mono"/>
-        <FormInput label="Card Unique Info ID" value={cardForm.card_unique_info_id} onChange={(val) => handleChange('card_unique_info_id', val)} className="font-roboto-mono"/>
+        <FormInput label="Card Unique Info ID" value={cardForm.card_unique_info_id} onChange={(val) => handleChange('card_unique_info_id', val)} className="font-roboto-mono" disabled={!isLocallyGeneratedId(cardForm.card_unique_info_id)}/>
         
         <FormInput label="Cost" type="number" value={cardForm.cost} onChange={(val) => handleChange('cost', Number(val))} />
         <FormSelect label="Rarity" value={cardForm.rarity} onChange={(val) => handleChange('rarity', Number(val))} options={RARITY_TYPE_OPTIONS} />
@@ -116,15 +116,15 @@ export const CharacterFormEditor: React.FC<CharacterFormEditorProps> = ({
         
         <FormSelect label="Leader Skill Set ID" value={cardForm.leader_skill_set_id} onChange={(val) => handleChange('leader_skill_set_id', val)} 
             options={patchState.leaderSkillSets.map(ls => ({ label: `${ls.id} - ${ls.name}`, value: ls.id }))}
-            allowCustom={true} customLabel="Use Custom ID" className="font-roboto-mono"
+            allowCustom={true} customLabel="Use Custom ID" className="font-roboto-mono" disabled={!isLocallyGeneratedId(cardForm.leader_skill_set_id)}
         />
         <FormSelect label="Passive Skill Set ID" value={cardForm.passive_skill_set_id} onChange={(val) => handleChange('passive_skill_set_id', val)}
             options={patchState.passiveSkillSets.map(ps => ({ label: `${ps.id} - ${ps.name}`, value: ps.id }))}
-            allowCustom={true} customLabel="Use Custom ID" className="font-roboto-mono"
+            allowCustom={true} customLabel="Use Custom ID" className="font-roboto-mono" disabled={!isLocallyGeneratedId(cardForm.passive_skill_set_id)}
         />
         <FormSelect label="Active Skill Set ID (Ref)" value={cardForm.active_skill_set_id_ref || ''} onChange={(val) => handleChange('active_skill_set_id_ref', val)}
             options={patchState.activeSkillSets.map(as => ({ label: `${as.id} - ${as.name}`, value: as.id }))}
-            allowCustom={true} customLabel="Use Custom ID" isOptional={true} className="font-roboto-mono"
+            allowCustom={true} customLabel="Use Custom ID" isOptional={true} className="font-roboto-mono" disabled={!isLocallyGeneratedId(cardForm.active_skill_set_id_ref || '')}
         />
       </div>
 
@@ -156,7 +156,6 @@ export const CharacterFormEditor: React.FC<CharacterFormEditorProps> = ({
         </div>
       </div>
 
-      {/* Special Attacks Section */}
       <div className="mt-8">
         <div className="flex justify-between items-center mb-4">
           <h4 className="text-xl font-semibold text-orange-400 font-rajdhani">Special Attacks (card_specials entries)</h4>
@@ -174,10 +173,10 @@ export const CharacterFormEditor: React.FC<CharacterFormEditorProps> = ({
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
-              <FormInput label="Row ID (card_specials)" value={cs.id} onChange={val => handleUpdateCardSpecial(index, 'id', val)} disabled={!cs.id.startsWith('local_')} className="font-roboto-mono" />
+              <FormInput label="Row ID (card_specials)" value={cs.id} onChange={val => handleUpdateCardSpecial(index, 'id', val)} disabled={!isLocallyGeneratedId(cs.id)} className="font-roboto-mono" />
               <FormSelect label="Special Set ID" value={cs.special_set_id} onChange={val => handleUpdateCardSpecial(index, 'special_set_id', val)}
                 options={patchState.specialSets.map(ss => ({ label: `${ss.id} - ${ss.name}`, value: ss.id }))}
-                allowCustom customLabel="Enter Custom Set ID" className="font-roboto-mono"
+                allowCustom customLabel="Enter Custom Set ID" className="font-roboto-mono" disabled={!isLocallyGeneratedId(cs.special_set_id)}
               />
               <FormInput label="Style (e.g. Normal, Hyper)" value={cs.style} onChange={val => handleUpdateCardSpecial(index, 'style', val)} />
               <FormInput label="Priority" type="number" value={cs.priority} onChange={val => handleUpdateCardSpecial(index, 'priority', Number(val))} />
@@ -187,7 +186,6 @@ export const CharacterFormEditor: React.FC<CharacterFormEditorProps> = ({
               <FormInput label="Costume Condition ID" type="number" value={cs.card_costume_condition_id} onChange={val => handleUpdateCardSpecial(index, 'card_costume_condition_id', Number(val))} />
               <FormInput label="Bonus ID 1" type="number" value={cs.special_bonus_id1} onChange={val => handleUpdateCardSpecial(index, 'special_bonus_id1', Number(val))} />
               <FormInput label="Bonus Lvl 1" type="number" value={cs.special_bonus_lv1} onChange={val => handleUpdateCardSpecial(index, 'special_bonus_lv1', Number(val))} />
-              {/* Add more fields for bonus_view_id1, special_bonus_id2 etc. if needed */}
               <FormTextArea label="Causality Conditions (JSON)" value={cs.causality_conditions || ''} onChange={val => handleUpdateCardSpecial(index, 'causality_conditions', val || null)} rows={2} className="font-roboto-mono lg:col-span-3 md:col-span-2"/>
             </div>
           </div>

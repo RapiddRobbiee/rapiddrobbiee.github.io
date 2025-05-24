@@ -1,3 +1,4 @@
+
 // Fix: Import necessary types from ../types
 import {DokkanID, CardForm, PassiveSkill, LeaderSkill, Special, ActiveSkillEffect, CardSpecial} from './types';
 
@@ -266,21 +267,68 @@ export const INITIAL_ACTIVE_SKILL_EFFECT: () => ActiveSkillEffect = () => ({
     sub_target_type_set_id: null, thumb_effect_id: null, effect_se_id: null,
 });
 
-// Simple unique ID generator for client-side temporary IDs for new skills
-let nextGeneratedId = new Date().getTime();
-export const generateLocalId = (prefix: string = 'local'): DokkanID => {
-  nextGeneratedId++;
-  return `${prefix}_${nextGeneratedId}`;
+export const ID_PREFIXES = {
+  CARD_UNIQUE_INFO: "70",
+  PASSIVE_SKILL_SET: "71",
+  LEADER_SKILL_SET: "72",
+  ACTIVE_SKILL_SET: "73",
+  SPECIAL_SET: "74",
+  OPTIMAL_AWAKENING_GROWTH_ID: "75",
+  OPTIMAL_AWAKENING_GROWTH_TYPE_ID: "76",
+  // Add other prefixes as needed
+} as const; // Use "as const" for stricter typing of prefix values
+
+type PrefixValue = typeof ID_PREFIXES[keyof typeof ID_PREFIXES];
+const ALL_PREFIX_VALUES = Object.values(ID_PREFIXES);
+
+export const LOCAL_ID_START_RANGE = 7000000;
+export const LOCAL_ID_END_RANGE = 7999999; // Allows for 1 million local base IDs
+let localIdCounter = 0;
+
+export const generateLocalId = (): DokkanID => {
+  const newId = LOCAL_ID_START_RANGE + localIdCounter;
+  if (newId > LOCAL_ID_END_RANGE) {
+    console.warn("Local ID counter has exceeded the defined range. This may lead to issues.");
+    // Potentially throw an error or reset, depending on desired behavior
+  }
+  localIdCounter++;
+  return String(newId);
 };
 
-export const INITIAL_CARD_SPECIAL = (card_id: DokkanID): CardSpecial => ({
-  id: generateLocalId('cardSpecial'),
+export const isLocallyGeneratedId = (id: DokkanID | null | undefined): boolean => {
+  if (!id || typeof id !== 'string') return false;
+
+  const numId = Number(id);
+
+  // Check if it's a base local ID (e.g., 7000001)
+  if (!isNaN(numId) && numId >= LOCAL_ID_START_RANGE && numId <= LOCAL_ID_END_RANGE) {
+    return true;
+  }
+
+  // Check if it's a derived prefixed ID (e.g., 707000001)
+  for (const prefix of ALL_PREFIX_VALUES) {
+    if (id.startsWith(prefix)) {
+      const suffix = id.substring(prefix.length);
+      if (suffix) {
+        const suffixNum = Number(suffix);
+        if (!isNaN(suffixNum) && suffixNum >= LOCAL_ID_START_RANGE && suffixNum <= LOCAL_ID_END_RANGE) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+};
+
+
+export const INITIAL_CARD_SPECIAL = (card_id: DokkanID, defaultSpecialSetId?: DokkanID): CardSpecial => ({
+  id: generateLocalId(),
   card_id: card_id,
-  special_set_id: '', 
+  special_set_id: defaultSpecialSetId || '', 
   priority: 0,
   style: 'Normal',
-  lv_start: 1, // Default SA level requirement
-  eball_num_start: 12, // Default to 12 Ki
+  lv_start: 1,
+  eball_num_start: 12,
   view_id: 0,
   card_costume_condition_id: 0,
   special_bonus_id1: 0,

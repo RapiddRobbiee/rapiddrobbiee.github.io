@@ -1,3 +1,4 @@
+
 // Shared ID type for clarity
 export type DokkanID = string;
 

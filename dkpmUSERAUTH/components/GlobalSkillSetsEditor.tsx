@@ -1,50 +1,46 @@
 
 import React, { useState, useCallback } from 'react';
 import { DokkanPatchState, PassiveSkillSet, LeaderSkillSet, SpecialSet, ActiveSkillSet, PassiveSkill, LeaderSkill, Special, ActiveSkillEffect, GeminiTaskType, DokkanID } from '../types';
-import { INITIAL_PASSIVE_SKILL, INITIAL_LEADER_SKILL, INITIAL_SPECIAL_SKILL, INITIAL_ACTIVE_SKILL_EFFECT, generateLocalId } from '../constants';
+import { INITIAL_PASSIVE_SKILL, INITIAL_LEADER_SKILL, INITIAL_SPECIAL_SKILL, INITIAL_ACTIVE_SKILL_EFFECT, generateLocalId, isLocallyGeneratedId } from '../constants';
 import { FormInput, FormTextArea, FormSelect } from './FormControls';
-import { SkillDetailEditor } from './SkillDetailEditor'; // A new component to handle individual skill details
+import { SkillDetailEditor } from './SkillDetailEditor';
 
 interface GlobalSkillSetsEditorProps {
   patchState: DokkanPatchState;
   setPatchState: React.Dispatch<React.SetStateAction<DokkanPatchState>>;
-  // openGeminiModal: (taskType: GeminiTaskType, data: any, updater: (text: string) => void) => void; // Gemini disabled
 }
 
 type SkillSetType = 'passiveSkillSets' | 'leaderSkillSets' | 'specialSets' | 'activeSkillSets';
 
-export const GlobalSkillSetsEditor: React.FC<GlobalSkillSetsEditorProps> = ({ patchState, setPatchState, 
-  // openGeminiModal // Gemini disabled
- }) => {
+export const GlobalSkillSetsEditor: React.FC<GlobalSkillSetsEditorProps> = ({ patchState, setPatchState }) => {
   const [editingSkillSet, setEditingSkillSet] = useState<{ type: SkillSetType, id: DokkanID } | null>(null);
 
   const handleAddSkillSet = (type: SkillSetType) => {
-    const newId = generateLocalId(type.replace('Sets', 'Set'));
+    const newId = generateLocalId(); // Generates ID in 7M range
     let newSet: any;
     switch (type) {
       case 'passiveSkillSets':
-        newSet = { id: newId, name: `New Passive Set ${patchState.passiveSkillSets.length + 1}`, description: '', itemized_description: '', skills: [] } as PassiveSkillSet;
+        newSet = { id: newId, name: `New Global Passive ${patchState.passiveSkillSets.length + 1}`, description: '', itemized_description: '', skills: [] } as PassiveSkillSet;
         break;
       case 'leaderSkillSets':
-        newSet = { id: newId, name: `New Leader Set ${patchState.leaderSkillSets.length + 1}`, description: '', skills: [] } as LeaderSkillSet;
+        newSet = { id: newId, name: `New Global Leader ${patchState.leaderSkillSets.length + 1}`, description: '', skills: [] } as LeaderSkillSet;
         break;
       case 'specialSets':
-        newSet = { id: newId, name: `New Special Set ${patchState.specialSets.length + 1}`, description: '', skills: [], aim_target: 0, increase_rate: 180, lv_bonus: 25, is_inactive: 0 } as SpecialSet;
+        newSet = { id: newId, name: `New Global Special ${patchState.specialSets.length + 1}`, description: '', skills: [], aim_target: 0, increase_rate: 180, lv_bonus: 25, is_inactive: 0 } as SpecialSet;
         break;
       case 'activeSkillSets':
-        newSet = { id: newId, name: `New Active Set ${patchState.activeSkillSets.length + 1}`, effect_description: '', condition_description: '', turn: 1, exec_limit: 1, skills: [] } as ActiveSkillSet;
+        newSet = { id: newId, name: `New Global Active ${patchState.activeSkillSets.length + 1}`, effect_description: '', condition_description: '', turn: 1, exec_limit: 1, skills: [] } as ActiveSkillSet;
         break;
     }
     if (newSet) {
       setPatchState(prev => ({ ...prev, [type]: [...prev[type] as any[], newSet] }));
-      setEditingSkillSet({ type, id: newId }); // Auto-select the new set for editing
+      setEditingSkillSet({ type, id: newId });
     }
   };
 
   const handleUpdateSkillSet = <T extends { id: DokkanID }> (type: SkillSetType, updatedSet: T) => {
     setPatchState(prev => ({
       ...prev,
-      // Fix: Cast to any[] to avoid complex generic interaction error, assuming T is correctly inferred from call sites.
       [type]: (prev[type] as any[]).map(s => s.id === updatedSet.id ? updatedSet : s)
     }));
   };
@@ -63,7 +59,7 @@ export const GlobalSkillSetsEditor: React.FC<GlobalSkillSetsEditorProps> = ({ pa
     <div className="mb-8 p-4 bg-indigo-800 bg-opacity-40 rounded-lg shadow-lg border border-indigo-600">
       <h3 className="text-2xl font-bold mb-4 text-orange-400 font-rajdhani capitalize">{type.replace(/([A-Z])/g, ' $1').replace('Skill Sets', ' Skill Sets')}</h3>
       <button onClick={() => handleAddSkillSet(type)} className="mb-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md text-sm shadow-md hover:shadow-lg transition-all">
-        <i className="fas fa-plus mr-2"></i> Add New {type.replace('SkillSets', ' Skill Set')}
+        <i className="fas fa-plus mr-2"></i> Add New {type.replace('SkillSets', ' Skill Set').replace('Sets', ' Set')}
       </button>
       <ul className="space-y-2 max-h-60 overflow-y-auto pr-2">
         {sets.map(set => (
@@ -91,36 +87,31 @@ export const GlobalSkillSetsEditor: React.FC<GlobalSkillSetsEditorProps> = ({ pa
     const { type, id } = editingSkillSet;
     const set = (patchState[type] as Array<any>).find(s => s.id === id);
     if (!set) {
-        setEditingSkillSet(null); // Clear selection if set was deleted
+        setEditingSkillSet(null);
         return <p className="text-red-400">Error: Skill set not found.</p>;
     }
 
-
     const commonFields = (
         <>
-            <FormInput label="ID" value={set.id} onChange={(val) => handleUpdateSkillSet(type, { ...set, id: val })} disabled={true} className="font-roboto-mono"/>
+            <FormInput 
+                label="ID" 
+                value={set.id} 
+                onChange={(val) => handleUpdateSkillSet(type, { ...set, id: val })} 
+                disabled={!isLocallyGeneratedId(String(set.id))} 
+                className="font-roboto-mono"
+            />
             <FormInput label="Name" value={set.name} onChange={(val) => handleUpdateSkillSet(type, { ...set, name: val })} />
         </>
     );
     
-    // Gemini related functionality disabled
-    // let descriptionUpdater: (text: string) => void;
-    // let geminiTask: GeminiTaskType;
-
     switch (type) {
       case 'passiveSkillSets':
         const ps = set as PassiveSkillSet;
-        // descriptionUpdater = (text: string) => handleUpdateSkillSet(type, { ...ps, description: text }); // Gemini disabled
-        // geminiTask = GeminiTaskType.GENERATE_PASSIVE_DESCRIPTION; // Gemini disabled
         return (
           <div className="p-6 bg-indigo-800 bg-opacity-50 rounded-xl shadow-xl border-2 border-orange-500">
             <h4 className="text-2xl font-bold mb-4 text-orange-400 font-rajdhani">Editing Passive Skill Set: <span className="text-indigo-200">{ps.name}</span></h4>
             {commonFields}
             <FormTextArea label="Description (Player-facing)" value={ps.description} onChange={(val) => handleUpdateSkillSet(type, { ...ps, description: val })} rows={4}/>
-            {/* Gemini Button Disabled */}
-            {/* <button onClick={() => openGeminiModal(geminiTask, ps.skills, descriptionUpdater)} className="text-sm text-blue-400 hover:text-blue-300 my-1 font-semibold">
-                <i className="fas fa-magic mr-1"></i> Gemini: Generate Description
-            </button> */}
             <FormTextArea label="Itemized Description" value={ps.itemized_description || ''} onChange={(val) => handleUpdateSkillSet(type, { ...ps, itemized_description: val })} rows={6}/>
             <SkillDetailEditor<PassiveSkill>
                 skillSetId={ps.id}
@@ -128,30 +119,22 @@ export const GlobalSkillSetsEditor: React.FC<GlobalSkillSetsEditorProps> = ({ pa
                 updateSkills={(updatedSkills) => handleUpdateSkillSet(type, { ...ps, skills: updatedSkills })}
                 initialSkillFactory={INITIAL_PASSIVE_SKILL}
                 skillName="Passive Effect"
-                // openGeminiModal={openGeminiModal} // Gemini disabled
             />
           </div>
         );
       case 'leaderSkillSets':
         const ls = set as LeaderSkillSet;
-        // descriptionUpdater = (text: string) => handleUpdateSkillSet(type, { ...ls, description: text }); // Gemini disabled
-        // geminiTask = GeminiTaskType.GENERATE_LEADER_DESCRIPTION; // Gemini disabled
         return (
           <div className="p-6 bg-indigo-800 bg-opacity-50 rounded-xl shadow-xl border-2 border-orange-500">
             <h4 className="text-2xl font-bold mb-4 text-orange-400 font-rajdhani">Editing Leader Skill Set: <span className="text-indigo-200">{ls.name}</span></h4>
             {commonFields}
             <FormTextArea label="Description (Player-facing)" value={ls.description} onChange={(val) => handleUpdateSkillSet(type, { ...ls, description: val })} rows={4}/>
-            {/* Gemini Button Disabled */}
-            {/* <button onClick={() => openGeminiModal(geminiTask, ls.skills, descriptionUpdater)} className="text-sm text-blue-400 hover:text-blue-300 my-1 font-semibold">
-                <i className="fas fa-magic mr-1"></i> Gemini: Generate Description
-            </button> */}
             <SkillDetailEditor<LeaderSkill>
                 skillSetId={ls.id}
                 skills={ls.skills}
                 updateSkills={(updatedSkills) => handleUpdateSkillSet(type, { ...ls, skills: updatedSkills })}
                 initialSkillFactory={() => ({...INITIAL_LEADER_SKILL(), leader_skill_set_id: ls.id})}
                 skillName="Leader Skill Effect"
-                // openGeminiModal={openGeminiModal} // Gemini disabled
             />
           </div>
         );
@@ -174,7 +157,6 @@ export const GlobalSkillSetsEditor: React.FC<GlobalSkillSetsEditorProps> = ({ pa
                 updateSkills={(updatedSkills) => handleUpdateSkillSet(type, { ...ss, skills: updatedSkills })}
                 initialSkillFactory={() => ({...INITIAL_SPECIAL_SKILL(), special_set_id: ss.id})}
                 skillName="Special Effect"
-                // openGeminiModal={openGeminiModal} // Gemini disabled
             />
           </div>
         );
@@ -199,7 +181,6 @@ export const GlobalSkillSetsEditor: React.FC<GlobalSkillSetsEditorProps> = ({ pa
                 updateSkills={(updatedSkills) => handleUpdateSkillSet(type, { ...as, skills: updatedSkills })}
                 initialSkillFactory={() => ({...INITIAL_ACTIVE_SKILL_EFFECT(), active_skill_set_id: as.id})}
                 skillName="Active Skill Effect"
-                // openGeminiModal={openGeminiModal} // Gemini disabled
             />
           </div>
         );

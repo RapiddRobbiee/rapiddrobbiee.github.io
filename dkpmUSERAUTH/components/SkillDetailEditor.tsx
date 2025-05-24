@@ -2,7 +2,7 @@
 import React from 'react';
 import { DokkanID, PassiveSkill, LeaderSkill, Special, ActiveSkillEffect, GeminiTaskType } from '../types';
 import { FormInput, FormSelect, FormTextArea, FormCheckbox } from './FormControls';
-import { CALC_OPTION_OPTIONS, EFFICACY_TYPE_OPTIONS, TARGET_TYPE_OPTIONS, EXEC_TIMING_TYPE_OPTIONS } from '../constants'; // Removed generateLocalId as it's not used directly here for new skill IDs
+import { CALC_OPTION_OPTIONS, EFFICACY_TYPE_OPTIONS, TARGET_TYPE_OPTIONS, EXEC_TIMING_TYPE_OPTIONS, isLocallyGeneratedId, generateLocalId } from '../constants';
 
 type SkillType = PassiveSkill | LeaderSkill | Special | ActiveSkillEffect;
 
@@ -11,37 +11,46 @@ interface SkillDetailEditorProps<T extends SkillType & { id: DokkanID, name?: st
   skills: T[];
   updateSkills: (updatedSkills: T[]) => void;
   initialSkillFactory: () => T;
-  skillName: string; // e.g., "Passive Effect", "Leader Skill Effect"
-  // openGeminiModal: (taskType: GeminiTaskType, data: any, updater: (text: string) => void) => void; // Gemini disabled
+  skillName: string;
 }
 
 export const SkillDetailEditor = <T extends SkillType & { id: DokkanID, name?: string }>(
-  { skillSetId, skills, updateSkills, initialSkillFactory, skillName, 
-    // openGeminiModal // Gemini disabled
-   }: SkillDetailEditorProps<T>
+  { skillSetId, skills, updateSkills, initialSkillFactory, skillName }: SkillDetailEditorProps<T>
 ) => {
 
   const handleAddSkill = () => {
     const newSkill = initialSkillFactory();
-    const currentIndex = skills.length; // Index before adding the new skill
+    const currentIndex = skills.length;
 
-    // Generate patterned ID based on skillName (which implies type)
+    // Generate patterned ID based on skillName and parent set ID
+    // Ensure the base part (skillSetId) is treated as a number for arithmetic/concatenation
+    const baseSetIdNum = Number(skillSetId);
+    const isBaseSetIdNumeric = !isNaN(baseSetIdNum);
+
     if (skillName === "Passive Effect" || skillName === "Special Effect") {
-      if (currentIndex === 0) {
-        newSkill.id = String(skillSetId);
+      if (currentIndex === 0 && isBaseSetIdNumeric) {
+        newSkill.id = String(baseSetIdNum);
+      } else if (isBaseSetIdNumeric) {
+        newSkill.id = String(currentIndex * 100) + String(baseSetIdNum); // Ensure it's string concat if baseSetIdNum is large
       } else {
-        newSkill.id = String(currentIndex * 100) + String(skillSetId);
+        newSkill.id = `${skillSetId}_${currentIndex}_${generateLocalId()}`; // Fallback if baseSetId is not numeric
       }
     } else if (skillName === "Leader Skill Effect") {
-      newSkill.id = String(skillSetId) + String(currentIndex).padStart(2, '0');
+      if (isBaseSetIdNumeric) {
+        newSkill.id = String(baseSetIdNum) + String(currentIndex).padStart(2, '0');
+      } else {
+         newSkill.id = `${skillSetId}_L${currentIndex}_${generateLocalId()}`;
+      }
     } else if (skillName === "Active Skill Effect") {
-      newSkill.id = String(skillSetId) + String(currentIndex + 1);
+       if (isBaseSetIdNumeric) {
+        newSkill.id = String(baseSetIdNum) + String(currentIndex + 1);
+       } else {
+         newSkill.id = `${skillSetId}_A${currentIndex + 1}_${generateLocalId()}`;
+       }
     } else {
-      // Fallback for any other unforeseen skill types, though unlikely with current structure
-      newSkill.id = `${skillSetId}_effect_${currentIndex}_${Date.now()}`; 
+      newSkill.id = generateLocalId(); // Fallback for other types
     }
     
-    // For passive skills, copy name and description from set if not set
     if ('name' in newSkill && !newSkill.name && skills.length > 0 && 'name' in skills[0]) {
         newSkill.name = (skills[0] as any).name || `${skillName} Detail`;
     }
@@ -68,7 +77,7 @@ export const SkillDetailEditor = <T extends SkillType & { id: DokkanID, name?: s
         label="Effect ID" 
         value={skill.id} 
         onChange={(val) => handleUpdateSkill(index, 'id' as keyof T, val)} 
-        disabled={!String(skill.id).startsWith('local_')} // Ensure skill.id is treated as string
+        disabled={!isLocallyGeneratedId(String(skill.id))} 
         className="font-roboto-mono"
       />
       {'name' in skill && <FormInput label="Effect Name (Internal)" value={skill.name || ''} onChange={(val) => handleUpdateSkill(index, 'name' as keyof T, val)} />}
@@ -76,11 +85,6 @@ export const SkillDetailEditor = <T extends SkillType & { id: DokkanID, name?: s
 
       <div className={isPassiveCompact ? "flex flex-col" : ""}>
         <FormSelect label="Efficacy Type" value={(skill as {efficacy_type: number}).efficacy_type} onChange={(val) => handleUpdateSkill(index, 'efficacy_type' as keyof T, Number(val))} options={EFFICACY_TYPE_OPTIONS} />
-        {/* Gemini button disabled */}
-        {/* <button onClick={() => openGeminiModal(GeminiTaskType.SUGGEST_EFFICACY_TYPE, (skill as {efficacy_type: number}).efficacy_type, (text) => handleUpdateSkill(index, 'efficacy_type' as keyof T, Number(text)))}
-              className="text-xs text-blue-300 hover:text-blue-200 mt-1 self-start font-semibold">
-              <i className="fas fa-magic mr-1"></i> Suggest Efficacy
-        </button> */}
       </div>
 
       <FormInput label="Eff Value 1" value={(skill as {eff_value1?: any}).eff_value1 ?? ''} onChange={(val) => handleUpdateSkill(index, 'eff_value1' as keyof T, val)} />
@@ -105,14 +109,9 @@ export const SkillDetailEditor = <T extends SkillType & { id: DokkanID, name?: s
       
       {'passive_skill_effect_id' in skill && <FormInput label="Passive Skill Effect ID" value={(skill as PassiveSkill).passive_skill_effect_id || ''} onChange={(val) => handleUpdateSkill(index, 'passive_skill_effect_id' as keyof T, val || null)} className="font-roboto-mono"/>}
       
-      <div className={isPassiveCompact ? "lg:col-span-3 md:col-span-2" : ""}> {/* Causality spans more width in compact mode */}
+      <div className={isPassiveCompact ? "lg:col-span-3 md:col-span-2" : ""}>
         <FormTextArea label="Causality Conditions (JSON)" value={(skill as {causality_conditions?: string | null}).causality_conditions || ''} 
           onChange={(val) => handleUpdateSkill(index, 'causality_conditions' as keyof T, val || null)} rows={isPassiveCompact ? 2 : 3} className="font-roboto-mono"/>
-        {/* Gemini button disabled */}
-        {/* <button onClick={() => openGeminiModal(GeminiTaskType.SUGGEST_CAUSALITY_JSON, (skill as {causality_conditions?: string | null}).causality_conditions, (text) => handleUpdateSkill(index, 'causality_conditions' as keyof T, text))}
-              className="text-xs text-blue-300 hover:text-blue-200 mt-1 self-start font-semibold">
-              <i className="fas fa-magic mr-1"></i> Suggest JSON
-        </button> */}
       </div>
     </>
   );
@@ -132,7 +131,6 @@ export const SkillDetailEditor = <T extends SkillType & { id: DokkanID, name?: s
           </div>
           <div className={`grid gap-x-6 gap-y-3 ${isPassiveCompact ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
             {renderGenericFields(skill, index, isPassiveCompact)}
-            {/* Specific fields based on T can be added here */}
             {skillName === "Special Effect" && (
                  <FormInput label="Type (e.g. Special::NormalEfficacySpecial)" value={(skill as Special).type} onChange={(val) => handleUpdateSkill(index, 'type' as keyof T, val)} />
             )}
