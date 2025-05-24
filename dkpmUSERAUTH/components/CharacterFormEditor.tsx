@@ -93,7 +93,7 @@ export const CharacterFormEditor: React.FC<CharacterFormEditorProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-        <FormInput label="Card ID" value={cardForm.id} onChange={(val) => handleChange('id', val)} placeholder="e.g., 7000001" type="text" className="font-roboto-mono" disabled={!isLocallyGeneratedId(cardForm.id)} />
+        <FormInput label="Card ID" value={cardForm.id} onChange={(val) => handleChange('id', val)} placeholder="e.g., 1070001" type="text" className="font-roboto-mono" disabled={!isLocallyGeneratedId(cardForm.id)} />
         <FormInput label="Name" value={cardForm.name} onChange={(val) => handleChange('name', val)} />
         <FormInput label="Character ID" value={cardForm.character_id} onChange={(val) => handleChange('character_id', val)} className="font-roboto-mono"/>
         <FormInput label="Card Unique Info ID" value={cardForm.card_unique_info_id} onChange={(val) => handleChange('card_unique_info_id', val)} className="font-roboto-mono" disabled={!isLocallyGeneratedId(cardForm.card_unique_info_id)}/>

@@ -281,7 +281,7 @@ export const ID_PREFIXES = {
 type PrefixValue = typeof ID_PREFIXES[keyof typeof ID_PREFIXES];
 const ALL_PREFIX_VALUES = Object.values(ID_PREFIXES);
 
-export const LOCAL_ID_START_RANGE = 7000000;
+export const LOCAL_ID_START_RANGE = 1070000;
 export const LOCAL_ID_END_RANGE = 7999999; // Allows for 1 million local base IDs
 let localIdCounter = 0;
 
