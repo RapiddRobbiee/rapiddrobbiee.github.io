@@ -284,11 +284,18 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen p-4 flex flex-col bg-indigo-900 text-indigo-100">
       <header className="mb-6">
+        
         <div className="flex justify-between items-center">
-            <h1 className="text-5xl font-bold text-orange-400 tracking-wider font-rajdhani title-animated">
-                Dokkan Battle Patch Maker
-            </h1>
-            <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4">
+  <i
+    className="fas fa-dragon text-6xl text-orange-400 p-3 bg-orange-500 bg-opacity-20 rounded-full shadow-lg"
+    style={{ textShadow: '0 0 10px rgba(251, 146, 60, 0.7)' }}
+  ></i>
+  <h1 className="text-5xl font-bold text-orange-400 tracking-wider font-rajdhani title-animated">
+    Dokkan Patch Maker
+  </h1>
+</div>
+                        <div className="flex items-center space-x-4">
                  {currentUser && (
                     <div className="flex items-center space-x-3 text-sm">
                         {currentUser.photoURL && <img src={currentUser.photoURL} alt="User" className="w-8 h-8 rounded-full"/>}
@@ -418,6 +425,7 @@ const App: React.FC = () => {
               <SqlOutputDisplay sql={generatedSql} />
             </div>
           )}
+         
         </main>
       </div>
       
@@ -431,6 +439,15 @@ const App: React.FC = () => {
           rarityTypes={RARITY_TYPES}
         />
       )}
+<div className="flex flex-col space-y-1">
+  <p className="text-indigo-300 text-center italic font-rajdhani text-sm">
+    Made by @RapiddRobbiee
+  </p>
+  <p className="text-indigo-300 italic text-right font-rajdhani text-sm">
+    v0.1
+  </p>
+</div>
+   
     </div>
   );
 };

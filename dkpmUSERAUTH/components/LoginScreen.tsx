@@ -55,7 +55,7 @@ export const LoginScreen: React.FC = () => {
                style={{ textShadow: '0 0 10px rgba(251, 146, 60, 0.7)'}}></i>
         </div>
         <h1 className="text-4xl sm:text-5xl font-bold text-orange-400 tracking-wider title-animated mb-3">
-          Dokkan Battle Patch Maker
+          Dokkan Patch Maker
         </h1>
         <p className="text-indigo-200 text-md sm:text-lg mb-8">
           {isSignUp ? 'Create an account' : 'Sign in to continue'}
@@ -102,14 +102,14 @@ export const LoginScreen: React.FC = () => {
           </button>
         </form>
 
-        <button 
+       {/*  <button 
           onClick={() => { setIsSignUp(!isSignUp); setError(null); }}
           disabled={isLoading || !firebaseConfigValid}
           className="mt-4 text-sm text-orange-300 hover:text-orange-400 disabled:opacity-60"
         >
           {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
         </button>
-
+*/}
         <div className="my-6 flex items-center">
           <hr className="flex-grow border-t border-indigo-600"/>
           <span className="px-3 text-indigo-400 text-sm">OR</span>
@@ -127,8 +127,9 @@ export const LoginScreen: React.FC = () => {
         
       </div>
       <footer className="absolute bottom-4 text-center w-full text-xs text-indigo-400 opacity-80">
-        <p>&copy; {new Date().getFullYear()} Dokkan Patch Maker. For personal and educational use.</p>
-         {process.env.FIREBASE_PROJECT_ID && <p className="text-xs opacity-50">Project: {process.env.FIREBASE_PROJECT_ID}</p>}
+        <p>&copy; {new Date().getFullYear()} Dokkan Patch Maker by @RapiddRobbiee. For personal and educational use only.</p>
+         {process.env.FIREBASE_PROJECT_ID && <p className="text-xs opacity-50">Powered by Google Firebase & Gemini</p>}
+    
       </footer>
     </div>
   );
