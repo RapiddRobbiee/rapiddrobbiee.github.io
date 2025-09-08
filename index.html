@@ -235,7 +235,16 @@
     html[data-theme="blackfrieza"] .btn-primary:hover {
         background: var(--clr-secondary);
     }
-
+    
+    /* NEW ANIMATIONS */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes fadeInScaleUp {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
 
     body {
       font-family: 'Rajdhani', 'Inter', sans-serif;
@@ -246,6 +255,16 @@
       background-image: var(--bg-image);
       background-blend-mode: overlay;
       transition: background-color 0.5s ease;
+      overflow-x: hidden;
+    }
+    
+    body::before { /* NEW - Add a subtle gradient overlay */
+        content: '';
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-image: radial-gradient(circle at top, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 30%);
+        pointer-events: none;
+        z-index: -1;
     }
 
     .background-overlay {
@@ -262,12 +281,13 @@
     ::-webkit-scrollbar { width: 12px; height: 12px; }
     ::-webkit-scrollbar-track { background: var(--clr-bg-main); }
     ::-webkit-scrollbar-thumb {
-      background: linear-gradient(var(--clr-secondary), var(--clr-primary));
+      background: var(--clr-border);
       border-radius: 6px;
       border: 3px solid var(--clr-bg-main);
+      transition: background-color 0.2s ease;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(var(--clr-primary), var(--clr-secondary));
+      background: var(--clr-accent);
     }
 
     .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
@@ -275,12 +295,15 @@
 
     /* Main Card Style */
     .card {
-      background-color: var(--clr-bg-card);
+      background: 
+        radial-gradient(circle at 100% 100%, rgba(255,255,255,0.03), rgba(255,255,255,0) 40%),
+        var(--clr-bg-card);
       border: 1px solid var(--clr-border);
       border-radius: 0.75rem; /* rounded-xl */
-      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1), 0 0 0 1px rgba(255,255,255,0.05) inset;
       transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
       backdrop-filter: blur(10px);
+      position: relative; /* For pseudo-elements */
     }
 
     .card-inset {
@@ -289,8 +312,18 @@
     }
 
     .section-title {
-        border-bottom: 1px solid var(--clr-border);
+        position: relative;
+        border-bottom: none; /* remove old border */
         color: var(--clr-text-accent);
+    }
+    .section-title::after { /* NEW - Gradient bottom border */
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(90deg, var(--clr-accent) 0%, transparent 80%);
     }
 
     /* Button and Input Styling */
@@ -300,11 +333,12 @@
       color: white;
       font-weight: 700;
       clip-path: polygon(0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px));
-      transition: transform 0.2s ease, filter 0.2s ease;
+      transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
     }
     .btn-primary:hover {
       transform: scale(1.03);
       filter: brightness(1.2);
+      box-shadow: 0 0 15px color-mix(in srgb, var(--clr-accent) 50%, transparent); /* NEW GLOW */
     }
     .btn-primary:disabled {
         filter: grayscale(80%) brightness(0.7);
@@ -406,6 +440,14 @@
       font-weight: 600;
     }
 
+    /* input/select focus transition */
+    input, select, textarea {
+        transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--clr-border-focus) 30%, transparent);
+    }
+    
     /* Text colors for various components */
     .text-main-accent {
       color: var(--clr-text-accent);
@@ -414,6 +456,14 @@
     .text-header-title { color: var(--clr-text); }
     .text-icon-primary { color: var(--clr-secondary); }
     
+    /* MODAL STYLES */
+    .modal-backdrop {
+        animation: fadeIn 0.3s ease-out forwards;
+    }
+    .modal-content {
+        animation: fadeInScaleUp 0.3s ease-out 0.1s forwards;
+        opacity: 0; /* start hidden for animation */
+    }
     .modal-title {
       color: var(--clr-text-accent);
       text-shadow: var(--text-shadow-accent);
@@ -421,6 +471,7 @@
     .modal-card {
         background-color: color-mix(in srgb, var(--clr-bg-main) 50%, var(--clr-bg-card));
         border: 2px solid var(--clr-accent);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5), 0 0 20px color-mix(in srgb, var(--clr-accent) 20%, transparent);
     }
 
     /* Skill/Category Chips */
@@ -436,6 +487,7 @@
     }
     .skill-chip:hover {
         border-color: var(--clr-border-focus);
+        transform: translateY(-1px);
     }
   </style>
 
@@ -452,12 +504,13 @@
     "firebase/app": "https://esm.sh/firebase@11.8.1/app",
     "firebase/auth": "https://esm.sh/firebase@11.8.1/auth",
     "firebase/firestore": "https://esm.sh/firebase@11.8.1/firestore",
+    "firebase/analytics": "https://esm.sh/firebase@11.8.1/analytics",
     "url": "https://esm.sh/url@0.11.4",
     "firebase/": "https://esm.sh/firebase@^11.8.1/"
   }
 }
 </script>
-  <script type="module" crossorigin src="/assets/index-_OOiLaLS.js"></script>
+  <script type="module" crossorigin src="/assets/index-DXadQSFT.js"></script>
 </head>
 <body class="text-gray-100">
   <div class="background-overlay"></div>
