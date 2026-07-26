@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dokkan Legacy Card SQL Studio</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Standalone Legacy-Aware Tool</p>
+          <h1>Dokkan Card + SQL Builder</h1>
+          <p>
+            This standalone app follows the original project flow: each card is created with linked
+            rows and SQL is generated with Dokkan table column ordering and defaults.
+          </p>
+        </div>
+        <div class="actions">
+          <button id="add-card" class="primary">Add Card Bundle</button>
+          <button id="clear-all" class="ghost">Clear All</button>
+        </div>
+      </header>
+
+      <main class="grid">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Card Bundles</h2>
+            <span id="bundle-count" class="badge">0 cards</span>
+          </div>
+          <div id="card-list" class="list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Card Editor</h2>
+            <span id="selected-card-id" class="muted">No card selected</span>
+          </div>
+
+          <form id="card-form" class="form">
+            <div class="field two">
+              <label>
+                Card Name
+                <input name="name" type="text" required />
+              </label>
+              <label>
+                Character Name
+                <input name="characterName" type="text" />
+              </label>
+            </div>
+
+            <div class="field three">
+              <label>
+                Rarity
+                <select name="rarity"></select>
+              </label>
+              <label>
+                Element
+                <select name="element"></select>
+              </label>
+              <label>
+                Cost
+                <input name="cost" type="number" min="0" />
+              </label>
+            </div>
+
+            <div class="field three">
+              <label>
+                HP Init
+                <input name="hp_init" type="number" min="0" />
+              </label>
+              <label>
+                HP Max
+                <input name="hp_max" type="number" min="0" />
+              </label>
+              <label>
+                Lv Max
+                <input name="lv_max" type="number" min="1" />
+              </label>
+            </div>
+
+            <div class="field three">
+              <label>
+                ATK Init
+                <input name="atk_init" type="number" min="0" />
+              </label>
+              <label>
+                ATK Max
+                <input name="atk_max" type="number" min="0" />
+              </label>
+              <label>
+                Skill Lv Max
+                <input name="skill_lv_max" type="number" min="1" />
+              </label>
+            </div>
+
+            <div class="field three">
+              <label>
+                DEF Init
+                <input name="def_init" type="number" min="0" />
+              </label>
+              <label>
+                DEF Max
+                <input name="def_max" type="number" min="0" />
+              </label>
+              <label>
+                Character ID
+                <input name="character_id" type="text" />
+              </label>
+            </div>
+
+            <label>
+              Category IDs (comma-separated)
+              <input name="category_ids" type="text" placeholder="17, 39, 83" />
+            </label>
+
+            <label>
+              Link Skill IDs (7 IDs, comma-separated)
+              <input name="link_skill_ids" type="text" placeholder="29, 97, 109, 125" />
+            </label>
+
+            <div class="actions">
+              <button type="submit" class="primary">Save Card Changes</button>
+              <button type="button" id="remove-card" class="ghost">Remove Card</button>
+            </div>
+          </form>
+        </section>
+      </main>
+
+      <section class="panel sql-panel">
+        <div class="panel-head">
+          <h2>Generated SQL (Legacy Style)</h2>
+          <div class="actions">
+            <button id="copy-sql" class="ghost">Copy SQL</button>
+            <button id="download-sql" class="primary">Download SQL</button>
+          </div>
+        </div>
+        <pre id="sql-output"></pre>
+      </section>
+
+      <p id="status" class="status">Ready.</p>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

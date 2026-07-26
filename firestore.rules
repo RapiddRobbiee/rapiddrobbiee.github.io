@@ -1,0 +1,32 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Rule for user-specific patch data in slots
+    // This path matches: /userPatches/{anyUserId}/slots/{anySlotId}
+    match /userPatches/{userId}/slots/{slotId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // NEW: Rule for user-specific planner data
+    // This path matches: /userPlanners/{anyUserId}
+    match /userPlanners/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Rule for bug reports (TOP-LEVEL collection)
+    match /bug_reports/{reportId} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['bugDescription', 'timestamp'])
+        && request.resource.data.bugDescription is string
+        && request.resource.data.bugDescription.size() < 5000;
+      allow read, update, delete: if false; // Only manage via Firebase Console
+    }
+
+    // Catch-all deny for any other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
