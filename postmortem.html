@@ -1,0 +1,462 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0c;
+    color: #f5f5f7;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ── Floating background orbs (stolen from Premium theme) ── */
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(60px);
+  }
+  body::before {
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(255,69,58,0.08), transparent 70%);
+    top: -20%; right: -15%;
+    animation: orbA 22s ease-in-out infinite;
+  }
+  body::after {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(255,159,10,0.06), transparent 70%);
+    bottom: -15%; left: -15%;
+    animation: orbB 26s ease-in-out infinite reverse;
+  }
+  @keyframes orbA {
+    0%,100% { transform: translate(0,0) scale(1); }
+    25% { transform: translate(4%,-5%) scale(1.05); }
+    50% { transform: translate(-3%,3%) scale(0.96); }
+    75% { transform: translate(5%,4%) scale(1.02); }
+  }
+  @keyframes orbB {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(5%,4%) scale(0.95); }
+    66% { transform: translate(-4%,-3%) scale(1.05); }
+  }
+
+  .container { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; position: relative; z-index: 1; }
+
+  /* ── Hero ── */
+  .hero {
+    text-align: center;
+    padding: 3rem 1rem 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+  }
+  .hero h1 {
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #ff453a 0%, #ff9f0a 40%, #ffd60a 70%, #30d158 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: hueShift 8s linear infinite;
+    background-size: 200% 200%;
+  }
+  @keyframes hueShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .hero .subtitle {
+    color: #86868b;
+    font-size: 1.1rem;
+    font-weight: 400;
+    margin-top: 0.75rem;
+  }
+  .hero .date {
+    display: inline-block;
+    font-size: 0.75rem;
+    color: #48484a;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 99px;
+    padding: 0.3rem 0.8rem;
+    margin-top: 0.75rem;
+  }
+
+  /* ── Stats ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin: 2rem 0;
+  }
+  @media (max-width: 500px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 1rem;
+    padding: 1.25rem 0.75rem;
+    text-align: center;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+  .stat-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.12); }
+  .stat-card .num {
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(135deg, #ff453a, #ff9f0a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-card:nth-child(2) .num { background: linear-gradient(135deg, #ff9f0a, #ffd60a); -webkit-background-clip: text; background-clip: text; }
+  .stat-card:nth-child(3) .num { background: linear-gradient(135deg, #ffd60a, #30d158); -webkit-background-clip: text; background-clip: text; }
+  .stat-card:nth-child(4) .num { background: linear-gradient(135deg, #30d158, #64d2ff); -webkit-background-clip: text; background-clip: text; }
+  .stat-card .label { font-size: 0.7rem; color: #86868b; margin-top: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* ── Section headers ── */
+  .section-header {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* ── Timeline ── */
+  .timeline { position: relative; padding-left: 2rem; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 9px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    border-radius: 2px;
+  }
+  .tl-item {
+    position: relative;
+    margin-bottom: 1.25rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    transition: all 0.3s ease;
+  }
+  .tl-item:hover { background: rgba(255,255,255,0.04); }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -1.6rem;
+    top: 1rem;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 2px solid;
+  }
+  .tl-item.wrong::before { background: #ff453a22; border-color: #ff453a; box-shadow: 0 0 8px rgba(255,69,58,0.3); }
+  .tl-item.correct::before { background: #30d15822; border-color: #30d158; box-shadow: 0 0 8px rgba(48,209,88,0.3); }
+  .tl-item .attempt { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; }
+  .tl-item.wrong .attempt { color: #ff453a; }
+  .tl-item.correct .attempt { color: #30d158; }
+  .tl-item h3 { font-size: 1rem; font-weight: 600; margin-top: 0.2rem; }
+  .tl-item .ctx { font-size: 0.85rem; color: #86868b; margin-top: 0.25rem; line-height: 1.5; }
+  .tl-item code {
+    background: rgba(255,255,255,0.07);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+  }
+
+  /* ── SVG Diagram ── */
+  .diagram-box {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+  }
+  .diagram-box h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #86868b;
+    margin-bottom: 1rem;
+  }
+  svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+  /* ── Root cause card ── */
+  .root-cause {
+    background: linear-gradient(135deg, rgba(48,209,88,0.06), rgba(48,209,88,0.01));
+    border: 1px solid rgba(48,209,88,0.15);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .root-cause h3 { color: #30d158; font-size: 1.05rem; }
+  .root-cause p { color: #86868b; margin-top: 0.5rem; font-size: 0.9rem; line-height: 1.6; }
+  .root-cause code {
+    background: rgba(255,255,255,0.07);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+  }
+
+  /* ── Lessons ── */
+  .lessons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+  }
+  .lesson {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    transition: transform 0.3s ease;
+  }
+  .lesson:hover { transform: translateY(-2px); }
+  .lesson .icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .lesson h4 { font-size: 0.95rem; font-weight: 600; }
+  .lesson p { font-size: 0.8rem; color: #86868b; margin-top: 0.3rem; line-height: 1.5; }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    color: #48484a;
+    font-size: 0.75rem;
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    line-height: 1.8;
+  }
+  .footer code { color: #86868b; background: rgba(255,255,255,0.04); padding: 0.1em 0.35em; border-radius: 4px; }
+
+  /* ── Fun emoji counter ── */
+  .face-row {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    font-size: 1.6rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+  }
+  .face-row .face { opacity: 0.3; transform: scale(0.8); }
+  .face-row .face.lit { opacity: 1; transform: scale(1); }
+
+  /* ── Blame button ── */
+  .blame-box {
+    text-align: center;
+    margin: 2rem 0;
+  }
+  .blame-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #ff453a, #ff9f0a);
+    color: #fff;
+    border: none;
+    border-radius: 9999px;
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    text-decoration: none;
+    font-family: inherit;
+  }
+  .blame-btn:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 8px 30px rgba(255,69,58,0.4);
+  }
+  .blame-btn:active { transform: scale(0.96); }
+</style>
+
+<div class="container">
+
+<div class="hero">
+  <h1>How Not to Debug a Sidebar</h1>
+  <div class="subtitle">One developer's journey through 10 wrong answers to find a 4px fix</div>
+  <div class="date">July 25, 2026 · 27 minutes of shame</div>
+</div>
+
+<!-- ── Face tally ── -->
+<div class="face-row">
+  <span class="face lit">😎</span>
+  <span class="face">😅</span>
+  <span class="face lit">😰</span>
+  <span class="face lit">😤</span>
+  <span class="face lit">😭</span>
+  <span class="face lit">🤡</span>
+  <span class="face lit">💀</span>
+  <span class="face lit">😵</span>
+  <span class="face lit">🤬</span>
+  <span class="face lit">🤝</span>
+</div>
+
+<!-- ── Stats ── -->
+<div class="stats">
+  <div class="stat-card"><div class="num">10</div><div class="label">Wrong guesses</div></div>
+  <div class="stat-card"><div class="num">4</div><div class="label">CSS files modified</div></div>
+  <div class="stat-card"><div class="num">4</div><div class="label">Times user said "still there"</div></div>
+  <div class="stat-card"><div class="num">4px</div><div class="label">The actual fix (pt-1)</div></div>
+</div>
+
+<!-- ── Timeline ── -->
+<div class="section-header">⏱️ The Spiral of Incorrect Guesses</div>
+<div class="timeline">
+
+  <div class="tl-item wrong">
+    <div class="attempt">Attempt 1 · "Too low"</div>
+    <h3>Add flex-1 to nav, mt-auto to bottom</h3>
+    <div class="ctx">User said sidebar content was too far down. Made the nav stretch to fill space, which pushed everything to the bottom. Made it worse.</div>
+  </div>
+
+  <div class="tl-item wrong">
+    <div class="attempt">Attempt 2 · "Still too low"</div>
+    <h3>Remove flex-1, remove mt-auto, add overflow-hidden</h3>
+    <div class="ctx">Reverted the stretch approach. Content now compact at top. <code>overflow-hidden</code> clips child elements at the card's border-radius. Oops.</div>
+  </div>
+
+  <div class="tl-item wrong">
+    <div class="attempt">Attempt 3 · "Overlap with hover border"</div>
+    <h3>CSS override: <code>aside.card:hover { border-color: inherit !important; }</code></h3>
+    <div class="ctx">Guessed the <code>.card:hover</code> border change was causing overlap. Used <code>inherit</code> which resolves to <code>currentColor</code> (the text color), not the original border. Wrong on two levels.</div>
+  </div>
+
+  <div class="tl-item wrong">
+    <div class="attempt">Attempt 4 · "Still there"</div>
+    <h3>Switch to <code>var(--clr-border)</code></h3>
+    <div class="ctx">Changed <code>inherit</code> → <code>var(--clr-border)</code>. Still didn't fix it because the actual issue wasn't the hover color at all.</div>
+  </div>
+
+  <div class="tl-item wrong">
+    <div class="attempt">Attempt 5 · "Still there"</div>
+    <h3>Create whole new <code>sidebar-card</code> CSS class</h3>
+    <div class="ctx">Duplicated the entire <code>.card</code> class (12 lines) minus the hover effect. Replaced <code>card</code> with <code>sidebar-card</code> on every sidebar. Peak over-engineering.</div>
+  </div>
+
+  <div class="tl-item wrong">
+    <div class="attempt">Attempt 6 · "Top cut off now"</div>
+    <h3>Remove <code>overflow-hidden</code> from &lt;main&gt;</h3>
+    <div class="ctx">Thought <code>overflow-hidden</code> on the main content wrapper was clipping card borders. Changed to <code>overflow-x-hidden</code>. Not the problem.</div>
+  </div>
+
+  <div class="tl-item wrong">
+    <div class="attempt">Attempt 7 · "Still cut off"</div>
+    <h3>Remove overflow entirely from &lt;main&gt;</h3>
+    <div class="ctx">Nuked overflow from orbit. Still wrong target.</div>
+  </div>
+
+  <div class="tl-item wrong">
+    <div class="attempt">Attempt 8 · Desperation</div>
+    <h3>Remove <code>overflow-hidden</code> from PatchWorkspace aside</h3>
+    <div class="ctx">Guessed the pre-existing <code>overflow-hidden</code> on the "Cards in patch" sidebar was the problem. It wasn't — it was there before any of my changes.</div>
+  </div>
+
+  <div class="tl-item wrong">
+    <div class="attempt">Attempt 9 · More CSS noise</div>
+    <h3>Bike-shedding the nav layout</h3>
+    <div class="ctx">Kept tweaking the exact same wrong variables (gap, padding, margins on unrelated elements) while the issue was 4px away from where I was looking.</div>
+  </div>
+
+  <div class="tl-item correct">
+    <div class="attempt">Attempt 10 · User pastes the HTML</div>
+    <h3><code>pt-1</code> on the nav — done</h3>
+    <div class="ctx">User pasted <code>&lt;button class="... ring-1 ... py-3 ..."&gt;Dashboard&lt;/button&gt;</code>. The <code>ring-1</code> sits at the element's edge. <code>overflow-y: auto</code> on the nav clips 1-2px off the top ring. Fix: <code>pt-1</code> (4px top padding) on the nav. 1 class, 3 characters. Worked instantly.</div>
+  </div>
+</div>
+
+<!-- ── SVG Diagram ── -->
+<div class="section-header">📐 Before & After</div>
+<div class="diagram-box">
+  <h3>Cross-section of the nav's top edge (zoomed in)</h3>
+  <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:680px;">
+    <!-- Before -->
+    <g transform="translate(20, 10)">
+      <text x="0" y="20" fill="#ff453a" font-size="13" font-weight="700">BEFORE</text>
+      <rect x="0" y="30" width="290" height="120" rx="8" fill="none" stroke="#ff453a44" stroke-width="1.5" stroke-dasharray="4"/>
+      <text x="10" y="55" fill="#86868b" font-size="11">&lt;nav&gt; (overflow-y: auto)</text>
+      <!-- Ring being clipped -->
+      <rect x="15" y="65" width="260" height="40" rx="8" fill="#ff453a11" stroke="#ff453a" stroke-width="1.5" stroke-dasharray="3,2"/>
+      <text x="22" y="90" fill="#ff453a" font-size="11">✕ ring-1 clipped here</text>
+      <!-- Scissors icon -->
+      <text x="110" y="115" fill="#ff453a" font-size="18" opacity="0.5">✂️</text>
+    </g>
+    <!-- Arrow -->
+    <text x="335" y="85" fill="#86868b" font-size="20">→</text>
+    <!-- After -->
+    <g transform="translate(370, 10)">
+      <text x="0" y="20" fill="#30d158" font-size="13" font-weight="700">AFTER (pt-1)</text>
+      <rect x="0" y="30" width="290" height="140" rx="8" fill="none" stroke="#30d15844" stroke-width="1.5" stroke-dasharray="4"/>
+      <text x="10" y="55" fill="#86868b" font-size="11">&lt;nav&gt; (overflow-y: auto)</text>
+      <!-- pt-1 zone -->
+      <rect x="15" y="60" width="260" height="8" rx="4" fill="#30d15822" stroke="#30d15888" stroke-width="1" stroke-dasharray="2"/>
+      <text x="22" y="74" fill="#30d158" font-size="10">pt-1 (4px padding)</text>
+      <!-- Ring safe -->
+      <rect x="15" y="80" width="260" height="40" rx="8" fill="#30d15811" stroke="#30d158" stroke-width="1.5"/>
+      <text x="22" y="105" fill="#30d158" font-size="11">✓ ring-1 fully visible</text>
+      <!-- Checkmark -->
+      <text x="130" y="125" fill="#30d158" font-size="14">✅</text>
+    </g>
+  </svg>
+</div>
+
+<!-- ── Root Cause ── -->
+<div class="section-header">🔬 Root Cause</div>
+<div class="root-cause">
+  <h3>overflow-y: auto clips the ring at the scroll container's boundary</h3>
+  <p>
+    Tailwind's <code>ring-1</code> is implemented as a <code>box-shadow</code> drawn at the element's edge — including the top edge. 
+    When the parent element has <code>overflow-y: auto</code>, the scroll container establishes a new clipping context. 
+    The very first pixel of the first child's top <code>box-shadow</code> sits exactly at the boundary and gets clipped by 1-2px.
+  </p>
+  <p style="margin-top:0.3rem;">
+    The fix is <code>pt-1</code> — 4px of top padding on the nav, giving the ring room to render fully within the scroll container.
+    Applied to both <code>LayoutDock.tsx</code> and <code>LayoutIDE.tsx</code>.
+  </p>
+</div>
+
+<!-- ── Lessons ── -->
+<div class="section-header">🧠 Lessons Learned</div>
+<div class="lessons">
+  <div class="lesson">
+    <div class="icon">🔍</div>
+    <h4>Ask for the DOM, don't guess CSS</h4>
+    <p>Every attempt targeted a different CSS property (overflow, border-color, flex, padding) without confirming which element was actually clipped. The fix was instantaneous once the user pasted the HTML.</div>
+  <div class="lesson">
+    <div class="icon">🏗️</div>
+    <h4>Don't over-engineer</h4>
+    <p>A 12-line <code>sidebar-card</code> CSS class, removing overflow from three separate elements, and rewriting layout spacings — all for a 3-character padding fix. The simplest change was correct from the start.</p>
+  </div>
+  <div class="lesson">
+    <div class="icon">🖼️</div>
+    <h4>Agent can't see your screenshots</h4>
+    <p>The model can't view image attachments. Each "look at this" screenshot was invisible. One line of HTML from the user solved it instantly — ask for that instead of guessing.</p>
+  </div>
+  <div class="lesson">
+    <div class="icon">🛠️</div>
+    <h4>Use DevTools</h4>
+    <p>Opening Chrome DevTools and inspecting the nav's computed styles would have revealed the clip in 10 seconds. Instead, the agent relied on visual screenshots and CSS armchair analysis.</p>
+  </div>
+</div>
+
+<!-- ── Blame button ── -->
+<div class="blame-box">
+  <a class="blame-btn" href="/" onclick="window.close()">
+    🔙 Return to the app
+  </a>
+</div>
+
+<div class="footer">
+  Files changed: <code>LayoutDock.tsx</code> · <code>LayoutIDE.tsx</code> · <code>index.html</code> (3x)<br>
+  Actual fix: <code>pt-1</code> on the nav element<br>
+  Developer's note: I'll ask for DOM snippets next time. Promise. 🤝
+</div>
+
+</div>

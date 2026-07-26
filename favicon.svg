@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="100" y2="100">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#0a1628"/>
+    </linearGradient>
+    <linearGradient id="starOuter" x1="0" y1="0" x2="100" y2="100">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="50%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="starInner" x1="0" y1="0" x2="100" y2="100">
+      <stop offset="0%" stop-color="#93c5fd"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect x="3" y="3" width="94" height="94" rx="20" fill="url(#bg)" stroke="#3b82f6" stroke-width="1.5" stroke-opacity="0.3"/>
+  <g filter="url(#glow)">
+    <path d="M50 12 L58 38 L84 46 L58 54 L50 80 L42 54 L16 46 L42 38 Z" fill="url(#starOuter)"/>
+  </g>
+  <path d="M50 22 L54 40 L72 44 L54 48 L50 66 L46 48 L28 44 L46 40 Z" fill="url(#starInner)"/>
+  <path d="M50 30 L52 40 L62 42 L52 44 L50 54 L48 44 L38 42 L48 40 Z" fill="#bfdbfe" opacity="0.6"/>
+</svg>
